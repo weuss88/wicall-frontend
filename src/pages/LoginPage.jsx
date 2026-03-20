@@ -3,17 +3,17 @@ import { useState } from 'react';
 export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!username || !password) return;
     setLoading(true);
-    setError(false);
+    setError('');
     try {
       await onLogin(username, password);
-    } catch {
-      setError(true);
+    } catch (e) {
+      setError(e.message || 'Erreur inconnue');
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ export default function LoginPage({ onLogin }) {
           <div className="login-sub">Plateforme de qualification prospect</div>
         </div>
         <div className="login-box">
-          {error && <div className="l-err">Identifiants incorrects</div>}
+          {error && <div className="l-err">{error}</div>}
           <div className="l-grp">
             <label className="l-lbl">Identifiant</label>
             <input className="l-in" type="text" placeholder="manager1"

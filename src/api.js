@@ -25,8 +25,16 @@ export async function apiCall(method, path, body = null) {
 }
 
 export async function loginAPI(username, password) {
-  const form = new URLSearchParams({ username, password });
-  const r = await fetch(API + '/auth/login', { method: 'POST', body: form });
-  if (!r.ok) throw new Error('Identifiants incorrects');
+  let r;
+  try {
+    const form = new URLSearchParams({ username, password });
+    r = await fetch(API + '/auth/login', { method: 'POST', body: form });
+  } catch (e) {
+    throw new Error('Serveur inaccessible — vérifie ta connexion ou réessaie dans 30 secondes (Railway se réveille)');
+  }
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.detail || 'Identifiants incorrects');
+  }
   return r.json();
 }
