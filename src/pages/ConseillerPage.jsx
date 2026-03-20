@@ -95,7 +95,7 @@ export default function ConseillerPage({ me, onLogout }) {
   const [cpLabel, setCpLabel] = useState('');
 
   useEffect(() => {
-    apiCall('GET', '/campaigns').then(setCampaigns).catch(console.error);
+    apiCall('GET', '/campaigns/').then(setCampaigns).catch(console.error);
   }, []);
 
   const ini = me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'C';

@@ -13,7 +13,7 @@ export default function ManagerPage({ onLogout }) {
 
   const loadCampaigns = useCallback(async () => {
     try {
-      const data = await apiCall('GET', '/campaigns');
+      const data = await apiCall('GET', '/campaigns/');
       setCampaigns(data);
     } catch (e) {
       alert('Erreur chargement campagnes: ' + e.message);
@@ -22,7 +22,7 @@ export default function ManagerPage({ onLogout }) {
 
   const loadUsers = useCallback(async () => {
     try {
-      const data = await apiCall('GET', '/users');
+      const data = await apiCall('GET', '/users/');
       setUsers(data);
     } catch (e) {
       alert('Erreur chargement conseillers: ' + e.message);
@@ -39,7 +39,7 @@ export default function ManagerPage({ onLogout }) {
   const handleSaveCampaign = async (data, id) => {
     try {
       if (id) await apiCall('PUT', '/campaigns/' + id, data);
-      else await apiCall('POST', '/campaigns', data);
+      else await apiCall('POST', '/campaigns/', data);
       setModalOpen(false);
       setEditCampaign(null);
       await loadCampaigns();
