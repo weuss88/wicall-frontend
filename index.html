@@ -1072,16 +1072,18 @@ async function loadUsers(){
       tr.querySelector('.btn-ed').addEventListener('click',()=>openEditUser(u.id,u.username,u.full_name||'',u.is_active));
       tb.appendChild(tr);
     });
-  }catch(e){console.warn('Erreur chargement users',e);}
+  }catch(e){console.warn('Erreur chargement users',e);alert('Impossible de charger les conseillers : '+e.message);}
 }
 
 async function openAddUser(){
   const u=prompt('Identifiant :');if(!u)return;
   const n=prompt('Nom complet :');if(!n)return;
   const p=prompt('Mot de passe :');if(!p)return;
-  apiCall('POST','/auth/register',{username:u,full_name:n,password:p,role:'conseiller'})
-    .then(async ()=>{alert('Conseiller créé !');await loadUsers();})
-    .catch(e=>alert('Erreur: '+e.message));
+  try{
+    await apiCall('POST','/auth/register',{username:u,full_name:n,password:p,role:'conseiller'});
+    alert('Conseiller créé !');
+    await loadUsers();
+  }catch(e){alert('Erreur: '+e.message);}
 }
 
 function openEditUser(id,username,fullname,active){
@@ -1225,6 +1227,8 @@ function resetForm(){
   ].forEach(id=>{const e=document.getElementById(id);if(e)e.checked=false;});
   document.getElementById('eid').value='';
   document.getElementById('f-tag').value='PAC';
+  const natCb=document.getElementById('f-nat');
+  if(natCb){natCb.checked=true;togNat(natCb);}
 }
 
 function togNat(cb){
@@ -1283,7 +1287,7 @@ async function saveCamp(){
   let cp='national';
   if(!document.getElementById('f-nat').checked){
     const raw=document.getElementById('f-cp').value;
-    const depts=raw.split(/[,\s]+/).map(x=>x.trim().padStart(2,'0')).filter(x=>x.length===2&&!isNaN(x));
+    const depts=raw.split(/[,\s]+/).map(x=>x.trim()).filter(x=>x.length>0).map(x=>x.padStart(2,'0')).filter(x=>x.length===2&&!isNaN(x));
     if(depts.length)cp=depts;
   }
 
