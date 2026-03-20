@@ -995,7 +995,7 @@ function makeCard(c,i){
   const st=getStatus(c),cp=cpM(c),col=TCOL[c.tag]||'#7ab8b5';
   const tags=[];
   if(c.logement)tags.push(tg(c.logement.map(x=>x[0].toUpperCase()+x.slice(1)).join('/'),cm(c,'logement')));
-  tags.push(tg('Propriétaire',cm(c,'statut')));
+  if(c.statut)tags.push(tg(c.statut.map(x=>x[0].toUpperCase()+x.slice(1)).join('/'),cm(c,'statut')));
   if(c.chauffage)tags.push(tg(c.chauffage.map(x=>x[0].toUpperCase()+x.slice(1)).join('/'),cm(c,'chauffage')));
   if(c.age_min!==null||c.age_max!==null)
     tags.push(tg((c.age_min||'?')+' – '+(c.age_max||'∞')+' ans',ageM(c)));
@@ -1068,18 +1068,19 @@ async function loadUsers(){
         <td><div class="t-name">${u.full_name||u.username}</div></td>
         <td style="color:var(--muted2)">${u.username}</td>
         <td><span style="background:${u.is_active?'var(--green2)':'rgba(255,68,68,0.1)'};color:${u.is_active?'var(--green)':'var(--red)'};padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">${u.is_active?'ACTIF':'INACTIF'}</span></td>
-        <td><button class="btn-ed" onclick="openEditUser(${u.id},'${u.username}','${u.full_name||''}',${u.is_active})">Modifier</button></td>`;
+        <td><button class="btn-ed">Modifier</button></td>`;
+      tr.querySelector('.btn-ed').addEventListener('click',()=>openEditUser(u.id,u.username,u.full_name||'',u.is_active));
       tb.appendChild(tr);
     });
   }catch(e){console.warn('Erreur chargement users',e);}
 }
 
-function openAddUser(){
+async function openAddUser(){
   const u=prompt('Identifiant :');if(!u)return;
   const n=prompt('Nom complet :');if(!n)return;
   const p=prompt('Mot de passe :');if(!p)return;
   apiCall('POST','/auth/register',{username:u,full_name:n,password:p,role:'conseiller'})
-    .then(()=>{alert('Conseiller créé !');loadUsers();})
+    .then(async ()=>{alert('Conseiller créé !');await loadUsers();})
     .catch(e=>alert('Erreur: '+e.message));
 }
 
@@ -1090,16 +1091,16 @@ function openEditUser(id,username,fullname,active){
   const body={full_name:n};
   if(p)body.password=p;
   apiCall('PUT','/users/'+id,body)
-    .then(()=>{alert('Modifié !');loadUsers();})
+    .then(async ()=>{alert('Modifié !');await loadUsers();})
     .catch(e=>alert('Erreur: '+e.message));
 }
 
-function mgrTab(tab,el){
+async function mgrTab(tab,el){
   document.querySelectorAll('#page-manager .sb-row').forEach(r=>r.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('tab-camp').style.display=tab==='camp'?'flex':'none';
   document.getElementById('tab-cons').style.display=tab==='cons'?'flex':'none';
-  if(tab==='cons')loadUsers();
+  if(tab==='cons')await loadUsers();
   document.getElementById('m-title').textContent=tab==='camp'?'Gestion Campagnes':'Gestion Conseillers';
   document.getElementById('m-topright').style.display=tab==='camp'?'flex':'none';
 }
