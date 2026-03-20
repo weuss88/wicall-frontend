@@ -726,18 +726,11 @@ select.fi option{background:var(--panel);}
       <div class="mgr-card">
         <div class="mgr-head">
           <div class="mgr-head-title">COMPTES CONSEILLERS</div>
-          <button class="btn-add" onclick="alert('Disponible avec le backend Python')">+ AJOUTER</button>
+          <button class="btn-add" onclick="openAddUser()">+ AJOUTER</button>
         </div>
         <table class="tbl">
           <thead><tr><th>Nom</th><th>Identifiant</th><th>Statut</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr><td><div class="t-name">Marie Dupont</div></td><td style="color:var(--muted2)">conseiller1</td>
-              <td><span style="background:var(--green2);color:var(--green);padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">ACTIF</span></td>
-              <td><button class="btn-ed">Modifier</button></td></tr>
-            <tr><td><div class="t-name">Pierre Martin</div></td><td style="color:var(--muted2)">conseiller2</td>
-              <td><span style="background:var(--green2);color:var(--green);padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">ACTIF</span></td>
-              <td><button class="btn-ed">Modifier</button></td></tr>
-          </tbody>
+          <tbody id="c-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -1063,11 +1056,50 @@ function updSbCounts(){
 }
 
 // ════ MANAGER ════
+async function loadUsers(){
+  try{
+    const users=await apiCall('GET','/users');
+    const tb=document.getElementById('c-tbody');
+    if(!tb)return;
+    tb.innerHTML='';
+    users.forEach(u=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td><div class="t-name">${u.full_name||u.username}</div></td>
+        <td style="color:var(--muted2)">${u.username}</td>
+        <td><span style="background:${u.is_active?'var(--green2)':'rgba(255,68,68,0.1)'};color:${u.is_active?'var(--green)':'var(--red)'};padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700">${u.is_active?'ACTIF':'INACTIF'}</span></td>
+        <td><button class="btn-ed" onclick="openEditUser(${u.id},'${u.username}','${u.full_name||''}',${u.is_active})">Modifier</button></td>`;
+      tb.appendChild(tr);
+    });
+  }catch(e){console.warn('Erreur chargement users',e);}
+}
+
+function openAddUser(){
+  const u=prompt('Identifiant :');if(!u)return;
+  const n=prompt('Nom complet :');if(!n)return;
+  const p=prompt('Mot de passe :');if(!p)return;
+  apiCall('POST','/auth/register',{username:u,full_name:n,password:p,role:'conseiller'})
+    .then(()=>{alert('Conseiller créé !');loadUsers();})
+    .catch(e=>alert('Erreur: '+e.message));
+}
+
+function openEditUser(id,username,fullname,active){
+  const n=prompt('Nouveau nom complet :',fullname);
+  if(n===null)return;
+  const p=prompt('Nouveau mot de passe (laisser vide = inchangé) :','');
+  const body={full_name:n};
+  if(p)body.password=p;
+  apiCall('PUT','/users/'+id,body)
+    .then(()=>{alert('Modifié !');loadUsers();})
+    .catch(e=>alert('Erreur: '+e.message));
+}
+
 function mgrTab(tab,el){
   document.querySelectorAll('#page-manager .sb-row').forEach(r=>r.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('tab-camp').style.display=tab==='camp'?'flex':'none';
   document.getElementById('tab-cons').style.display=tab==='cons'?'flex':'none';
+  if(tab==='cons')loadUsers();
   document.getElementById('m-title').textContent=tab==='camp'?'Gestion Campagnes':'Gestion Conseillers';
   document.getElementById('m-topright').style.display=tab==='camp'?'flex':'none';
 }
@@ -1295,6 +1327,8 @@ window.delCamp=delCamp;
 window.togNat=togNat;
 window.togAll=togAll;
 window.togAge=togAge;
+window.openAddUser=openAddUser;
+window.openEditUser=openEditUser;
 
 </script>
 </body>
