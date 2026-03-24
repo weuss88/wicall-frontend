@@ -188,6 +188,8 @@ body::before{
   padding:0 8px;text-align:center;}
 .cp-iin{width:62px;letter-spacing:2px;}
 .age-iin{width:48px;}
+.tel-iin{width:116px;letter-spacing:1px;}
+.search-iin{width:160px;text-align:left;}
 .iin::placeholder{color:var(--muted);font-size:12px;letter-spacing:1px;}
 .ilbl-nm{font-size:10px;color:var(--teal);font-weight:600;padding-right:10px;
   white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;}
@@ -498,6 +500,7 @@ select.fi option{background:var(--panel);}
   .filters::-webkit-scrollbar{display:none;}
   .fg{flex-shrink:0;}
   .ibox{flex-shrink:0;}
+  .search-iin{width:100px;}
   .fb{padding:5px 10px;font-size:11px;}
   #init-screen{padding:30px 20px;flex:1;min-height:calc(100vh - 200px);}
   #init-screen h2{font-size:20px;}

@@ -166,12 +166,11 @@ export default function ManagerPage({ me, onLogout }) {
                 <div className="ibox" style={{marginRight:'8px'}}>
                   <span className="ilbl">🔍</span>
                   <input
-                    className="iin"
+                    className="iin search-iin"
                     type="text"
                     placeholder="Rechercher..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    style={{width:'160px'}}
                   />
                   {search && (
                     <button onClick={() => setSearch('')} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',padding:'0 4px',fontSize:'12px'}}>✕</button>
