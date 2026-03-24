@@ -12,7 +12,9 @@ const ALL_PAGES = [
 function hasPage(me, page) {
   if (!me) return false;
   if (me.is_owner) return true;
-  return (me.pages_access || []).includes(page);
+  // Manager sans pages_access définies → accès complet (rétro-compat)
+  if (!me.pages_access || me.pages_access.length === 0) return true;
+  return me.pages_access.includes(page);
 }
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
