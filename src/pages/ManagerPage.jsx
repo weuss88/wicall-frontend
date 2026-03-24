@@ -75,6 +75,16 @@ export default function ManagerPage({ me, onLogout }) {
   const openEditUser = (user) => setUserDlg({ mode: 'edit', user, username: user.username, fullName: user.full_name || '', password: '', saving: false, error: '' });
   const closeUserDlg = () => setUserDlg(null);
 
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`Supprimer le compte de ${user.full_name || user.username} ? Cette action est irréversible.`)) return;
+    try {
+      await apiCall('DELETE', '/users/' + user.id);
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (e) {
+      alert('Erreur: ' + e.message);
+    }
+  };
+
   const handleSaveUser = async () => {
     const { mode, user, username, fullName, password } = userDlg;
     if (!fullName.trim()) { setUserDlg(d => ({ ...d, error: 'Le nom est obligatoire' })); return; }
@@ -302,6 +312,7 @@ export default function ManagerPage({ me, onLogout }) {
                         </td>
                         <td>
                           <button className="btn-ed" onClick={() => openEditUser(u)}>Modifier</button>
+                          <button className="btn-dl" onClick={() => handleDeleteUser(u)}>✕</button>
                         </td>
                       </tr>
                     ))}
