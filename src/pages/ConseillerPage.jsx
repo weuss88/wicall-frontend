@@ -120,7 +120,11 @@ export default function ConseillerPage({ me, onLogout }) {
   const eli = shown.filter(c => c._st === 'eligible').length;
   const left = shown.filter((_, i) => i % 2 === 0);
   const right = shown.filter((_, i) => i % 2 === 1);
-  const byClient = name => active.filter(c => c.client.toLowerCase().startsWith(name.toLowerCase())).length;
+  const clientCounts = active.reduce((acc, c) => {
+    const key = c.client.split('—')[0].trim();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div className="page">
@@ -133,9 +137,11 @@ export default function ConseillerPage({ me, onLogout }) {
           <div className="sb-sec">Navigation</div>
           <div className="sb-row on"><div className="sb-dot"></div>Qualification</div>
           <div className="sb-sec">Clients actifs</div>
-          <div className="sb-row"><div className="sb-dot"></div>Yony<span className="sb-tag">{byClient('yony')}</span></div>
-          <div className="sb-row"><div className="sb-dot"></div>Léna<span className="sb-tag">{byClient('léna')}</span></div>
-          <div className="sb-row"><div className="sb-dot"></div>Cécile<span className="sb-tag">{byClient('cécile')}</span></div>
+          {Object.entries(clientCounts).map(([name, count]) => (
+            <div key={name} className="sb-row">
+              <div className="sb-dot"></div>{name}<span className="sb-tag">{count}</span>
+            </div>
+          ))}
           <div className="sb-foot">
             <div className="sb-user">
               <div className="sb-av">{ini}</div>
