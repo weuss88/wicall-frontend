@@ -3,6 +3,41 @@ import { apiCall } from '../api';
 import CampaignModal from '../components/CampaignModal';
 
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+function parseCPL(cpl) {
+  if (!cpl) return 0;
+  const n = parseFloat(String(cpl).replace(/[^0-9.]/g,''));
+  return isNaN(n) ? 0 : n;
+}
+function exportCSV(leads, campaigns) {
+  const headers = ['Date','Statut','Conseiller','Campagne','Tag','CPL','Nom','Prénom','Téléphone','Mail','CP','Ville','Rappel','Note'];
+  const rows = leads.map(l => {
+    const camp = campaigns.find(c => c.id === l.campaign_id);
+    const rappel = l.date_rappel ? new Date(l.date_rappel).toLocaleDateString('fr-FR') + (l.heure_rappel ? ' '+l.heure_rappel : '') : '';
+    return [
+      new Date(l.created_at).toLocaleDateString('fr-FR'),
+      l.statut,
+      l.conseiller_name || '',
+      l.campaign_nom || '',
+      l.campaign_tag || '',
+      camp?.cpl || '',
+      l.nom_prospect || '',
+      l.prenom || '',
+      l.telephone || '',
+      l.email || '',
+      l.cp || '',
+      l.ville || '',
+      rappel,
+      l.commentaire || '',
+    ];
+  });
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
 
 const STATUT_CFG = {
   valide:     { bg:'rgba(0,230,118,0.12)',  color:'var(--green)', border:'rgba(0,230,118,0.3)',  label:'✓ VALIDÉ' },
@@ -183,6 +218,10 @@ function LeadEditModal({ lead, onSave, onClose }) {
 }
 
 export default function ManagerPage({ me, onLogout }) {
+  const now = new Date();
+  const isSuperAdmin = me?.role === 'super_admin';
+  const canBilling = isSuperAdmin || me?.billing_access;
+
   const [tab, setTab] = useState('camp');
   const [campaigns, setCampaigns] = useState([]);
   const [users, setUsers] = useState([]);
@@ -192,6 +231,8 @@ export default function ManagerPage({ me, onLogout }) {
   const [userDlg, setUserDlg] = useState(null);
   const [editLead, setEditLead] = useState(null);
   const [search, setSearch] = useState('');
+  const [billingMonth, setBillingMonth] = useState(now.getMonth());
+  const [billingYear, setBillingYear] = useState(now.getFullYear());
   // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, saving, error }
 
   const loadCampaigns = useCallback(async () => {
@@ -232,7 +273,7 @@ export default function ManagerPage({ me, onLogout }) {
   const handleTabChange = (newTab) => {
     setTab(newTab);
     if (newTab === 'cons') loadUsers();
-    if (newTab === 'leads') loadLeads();
+    if (newTab === 'leads' || newTab === 'billing') { loadLeads(); }
   };
 
   const handleSaveCampaign = async (data, id) => {
@@ -337,6 +378,12 @@ export default function ManagerPage({ me, onLogout }) {
             <div className="sb-dot"></div>Leads
             {totalLeads > 0 && <span className="sb-tag">{totalLeads}</span>}
           </div>
+          {canBilling && (
+            <div className={`sb-row ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>
+              <div className="sb-dot"></div>Facturation
+              <span style={{fontSize:'8px',marginLeft:'4px',color:'var(--teal)',opacity:.6,fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>🔒</span>
+            </div>
+          )}
           <div className="sb-sec">Stats live</div>
           <div className="sb-row"><div className="sb-dot"></div>Total<span className="sb-tag">{tot}</span></div>
           <div className="sb-row"><div className="sb-dot"></div>Actives<span className="sb-tag">{act}</span></div>
@@ -370,6 +417,7 @@ export default function ManagerPage({ me, onLogout }) {
           <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>
           <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>
           <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>
+          {canBilling && <button className={`mob-tab ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>💶 Facturation</button>}
         </div>
 
         {/* Main */}
@@ -377,7 +425,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="topbar">
             <div>
               <div className="tp-path">WICALL / MANAGER</div>
-              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : 'Leads Qualifiés'}</div>
+              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : tab==='billing' ? 'Facturation' : 'Leads Qualifiés'}</div>
             </div>
             {tab === 'camp' && (
               <div className="tp-right">
@@ -543,7 +591,15 @@ export default function ManagerPage({ me, onLogout }) {
               <div className="mgr-card">
                 <div className="mgr-head">
                   <div className="mgr-head-title">TOUS LES LEADS</div>
-                  <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadLeads}>↺ Actualiser</button>
+                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                    <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadLeads}>↺ Actualiser</button>
+                    {leads.length > 0 && (
+                      <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,230,118,0.35)',color:'var(--green)'}}
+                        onClick={() => exportCSV(leads, campaigns)}>
+                        ↓ Export CSV
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {leads.length === 0 ? (
                   <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
@@ -616,6 +672,116 @@ export default function ManagerPage({ me, onLogout }) {
               </div>
             </div>
           )}
+
+          {/* Tab Facturation — super_admin uniquement */}
+          {tab === 'billing' && canBilling && (() => {
+            const bLeads = leads.filter(l => {
+              const d = new Date(l.created_at);
+              return d.getFullYear() === billingYear && d.getMonth() === billingMonth;
+            });
+            const bValidated = bLeads.filter(l => l.statut === 'valide');
+
+            // Grouper par campagne
+            const byCamp = {};
+            bLeads.forEach(l => {
+              if (!byCamp[l.campaign_id]) byCamp[l.campaign_id] = { nom: l.campaign_nom, tag: l.campaign_tag, client: l.campaign_client, leads: [], valides: [] };
+              byCamp[l.campaign_id].leads.push(l);
+              if (l.statut === 'valide') byCamp[l.campaign_id].valides.push(l);
+            });
+
+            const rows = Object.values(byCamp).map(g => {
+              const camp = campaigns.find(c => c.nom === g.nom);
+              const cpl = parseCPL(camp?.cpl);
+              const taux = camp?.taux_evaluation ?? 100;
+              const ca = g.valides.length * cpl * taux / 100;
+              return { ...g, cpl, taux, ca };
+            }).sort((a, b) => b.ca - a.ca);
+
+            const totalCA = rows.reduce((s, r) => s + r.ca, 0);
+
+            const prevBMonth = () => { if (billingMonth===0){setBillingMonth(11);setBillingYear(y=>y-1);}else setBillingMonth(m=>m-1); };
+            const nextBMonth = () => { if (billingMonth===11){setBillingMonth(0);setBillingYear(y=>y+1);}else setBillingMonth(m=>m+1); };
+            const canNextB = billingYear < now.getFullYear() || (billingYear === now.getFullYear() && billingMonth < now.getMonth());
+
+            return (
+              <div className="mgr-body">
+                <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
+                  <button className="btn-r" onClick={prevBMonth}>← Préc.</button>
+                  <div style={{fontFamily:'Rajdhani,sans-serif',fontSize:'16px',fontWeight:700,color:'var(--teal)',letterSpacing:'1px',minWidth:'180px',textAlign:'center'}}>
+                    {MOIS_FR[billingMonth].toUpperCase()} {billingYear}
+                  </div>
+                  {canNextB && <button className="btn-r" onClick={nextBMonth}>Suiv. →</button>}
+                  {bLeads.length > 0 && (
+                    <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,230,118,0.35)',color:'var(--green)',marginLeft:'auto'}}
+                      onClick={() => exportCSV(bLeads, campaigns)}>↓ Export CSV</button>
+                  )}
+                </div>
+
+                <div className="stats-row">
+                  <div className="stat-card">
+                    <div className="stat-ico">📋</div>
+                    <div><div className="stat-val">{bLeads.length}</div><div className="stat-lbl">Leads soumis</div></div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-ico" style={{color:'var(--green)'}}>✓</div>
+                    <div><div className="stat-val">{bValidated.length}</div><div className="stat-lbl">Leads validés</div></div>
+                  </div>
+                  <div className="stat-card" style={{border:'1px solid rgba(0,230,118,0.3)',background:'rgba(0,230,118,0.06)'}}>
+                    <div className="stat-ico">💶</div>
+                    <div><div className="stat-val" style={{color:'var(--green)'}}>{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA total du mois</div></div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-ico">📋</div>
+                    <div><div className="stat-val">{rows.length}</div><div className="stat-lbl">Campagnes actives</div></div>
+                  </div>
+                </div>
+
+                <div className="mgr-card">
+                  <div className="mgr-head">
+                    <div className="mgr-head-title">DÉTAIL PAR CAMPAGNE — {MOIS_FR[billingMonth].toUpperCase()} {billingYear}</div>
+                  </div>
+                  {rows.length === 0 ? (
+                    <div style={{textAlign:'center',padding:'40px',color:'var(--muted)',fontSize:'13px'}}>Aucun lead ce mois</div>
+                  ) : (
+                    <div style={{overflowX:'auto'}}>
+                      <table className="tbl">
+                        <thead><tr>
+                          <th>Campagne</th><th>Client</th><th>Tag</th>
+                          <th>Soumis</th><th>Validés</th><th>CPL</th><th>Taux éval.</th><th style={{color:'var(--green)'}}>CA calculé</th>
+                        </tr></thead>
+                        <tbody>
+                          {rows.map((r, i) => {
+                            const col = TCOL[r.tag] || '#7ab8b5';
+                            return (
+                              <tr key={i}>
+                                <td><div className="t-name">{r.nom}</div></td>
+                                <td style={{color:'var(--muted2)',fontSize:'11px'}}>{r.client}</td>
+                                <td><span className="t-tag" style={{background:`${col}18`,color:col,border:`1px solid ${col}35`}}>{r.tag}</span></td>
+                                <td>{r.leads.length}</td>
+                                <td style={{color: r.valides.length > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: r.valides.length > 0 ? 600 : 400}}>{r.valides.length}</td>
+                                <td className="t-cpl">{r.cpl > 0 ? r.cpl + ' €' : <span style={{color:'var(--muted)'}}>—</span>}</td>
+                                <td style={{color: r.taux < 100 ? '#ffd740' : 'var(--text2)'}}>{r.taux}%</td>
+                                <td style={{color: r.ca > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: r.ca > 0 ? 700 : 400}}>
+                                  {r.ca > 0 ? r.ca.toFixed(2) + ' €' : '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          <tr style={{borderTop:'1px solid rgba(0,210,200,0.2)',fontWeight:700,background:'rgba(0,210,200,0.03)'}}>
+                            <td colSpan="3" style={{color:'var(--teal)',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>TOTAL</td>
+                            <td>{bLeads.length}</td>
+                            <td style={{color:'var(--green)'}}>{bValidated.length}</td>
+                            <td colSpan="2"></td>
+                            <td style={{color:'var(--green)',fontSize:'13px'}}>{totalCA.toFixed(2)} €</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

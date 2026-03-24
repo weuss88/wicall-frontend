@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { apiCall } from '../api';
 
 const DEPTS = {'01':'Ain','02':'Aisne','03':'Allier','04':'Alpes-HteProv','05':'Htes-Alpes','06':'Alpes-Mar','07':'Ardèche','08':'Ardennes','09':'Ariège','10':'Aube','11':'Aude','12':'Aveyron','13':'Bouches-du-Rhône','14':'Calvados','15':'Cantal','16':'Charente','17':'Char-Maritime','18':'Cher','19':'Corrèze','21':'Côte-d\'Or','22':'Côtes-d\'Armor','23':'Creuse','24':'Dordogne','25':'Doubs','26':'Drôme','27':'Eure','28':'Eure-et-Loir','29':'Finistère','30':'Gard','31':'Hte-Garonne','32':'Gers','33':'Gironde','34':'Hérault','35':'Ille-et-Vilaine','36':'Indre','37':'Indre-et-Loire','38':'Isère','39':'Jura','40':'Landes','41':'Loir-et-Cher','42':'Loire','43':'Hte-Loire','44':'Loire-Atl','45':'Loiret','46':'Lot','47':'Lot-et-Garonne','48':'Lozère','49':'Maine-et-Loire','50':'Manche','51':'Marne','52':'Hte-Marne','53':'Mayenne','54':'M-et-Moselle','55':'Meuse','56':'Morbihan','57':'Moselle','58':'Nièvre','59':'Nord','60':'Oise','61':'Orne','62':'Pas-de-Calais','63':'Puy-de-Dôme','64':'Pyr-Atl','65':'Htes-Pyr','66':'Pyr-Or','67':'Bas-Rhin','68':'Haut-Rhin','69':'Rhône','70':'Hte-Saône','71':'Saône-et-Loire','72':'Sarthe','73':'Savoie','74':'Hte-Savoie','75':'Paris','76':'Seine-Maritime','77':'Seine-et-Marne','78':'Yvelines','79':'Deux-Sèvres','80':'Somme','81':'Tarn','82':'Tarn-et-Garonne','83':'Var','84':'Vaucluse','85':'Vendée','86':'Vienne','87':'Hte-Vienne','88':'Vosges','89':'Yonne','90':'Ter-Belfort','91':'Essonne','92':'Hts-de-Seine','93':'Seine-St-Denis','94':'Val-de-Marne','95':'Val-d\'Oise'};
@@ -282,6 +282,132 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
 
 const D = v => v ? v : <span style={{color:'var(--muted)'}}>—</span>;
 
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+function parseCPL(cpl) {
+  if (!cpl) return 0;
+  const n = parseFloat(String(cpl).replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function MonCATab({ myLeads, campaigns }) {
+  const now = new Date();
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+
+  const getCPL = l => parseCPL(campaigns.find(c => c.id === l.campaign_id)?.cpl);
+  const getTaux = l => campaigns.find(c => c.id === l.campaign_id)?.taux_evaluation ?? 100;
+
+  const monthLeads = useMemo(() => myLeads.filter(l => {
+    const d = new Date(l.created_at);
+    return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+  }), [myLeads, viewMonth, viewYear]);
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = now.getDate();
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
+  const days = useMemo(() => Array.from({length: daysInMonth}, (_, i) => {
+    const day = i + 1;
+    const dl = monthLeads.filter(l => new Date(l.created_at).getDate() === day);
+    const valides = dl.filter(l => l.statut === 'valide');
+    const ca = valides.reduce((s, l) => s + getCPL(l) * getTaux(l) / 100, 0);
+    return {
+      day,
+      total: dl.length,
+      valide: valides.length,
+      attente: dl.filter(l => l.statut === 'en_attente').length,
+      supprime: dl.filter(l => l.statut === 'supprime').length,
+      ca
+    };
+  }), [monthLeads, daysInMonth]);
+
+  const totalCA = days.reduce((s, d) => s + d.ca, 0);
+  const totalLeads = monthLeads.length;
+  const totalValide = monthLeads.filter(l => l.statut === 'valide').length;
+  const activeDays = days.filter(d => d.total > 0).length;
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1); } else setViewMonth(m => m-1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1); } else setViewMonth(m => m+1); };
+  const canNext = viewYear < now.getFullYear() || (viewYear === now.getFullYear() && viewMonth < now.getMonth());
+
+  return (
+    <div className="mgr-body">
+      <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
+        <button className="btn-r" onClick={prevMonth}>← Préc.</button>
+        <div style={{fontFamily:'Rajdhani,sans-serif',fontSize:'16px',fontWeight:700,color:'var(--teal)',letterSpacing:'1px',minWidth:'160px',textAlign:'center'}}>
+          {MOIS_FR[viewMonth].toUpperCase()} {viewYear}
+        </div>
+        {canNext && <button className="btn-r" onClick={nextMonth}>Suiv. →</button>}
+      </div>
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-ico">📋</div>
+          <div><div className="stat-val">{totalLeads}</div><div className="stat-lbl">Leads total</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-ico" style={{color:'var(--green)'}}>✓</div>
+          <div><div className="stat-val">{totalValide}</div><div className="stat-lbl">Validés</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-ico">💶</div>
+          <div><div className="stat-val">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-ico">📅</div>
+          <div><div className="stat-val">{activeDays}</div><div className="stat-lbl">Jours actifs</div></div>
+        </div>
+      </div>
+      <div className="mgr-card">
+        <div className="mgr-head">
+          <div className="mgr-head-title">DÉTAIL PAR JOUR — {MOIS_FR[viewMonth].toUpperCase()} {viewYear}</div>
+        </div>
+        {totalLeads === 0 ? (
+          <div style={{textAlign:'center',padding:'40px',color:'var(--muted)',fontSize:'13px'}}>Aucun lead qualifié ce mois</div>
+        ) : (
+          <div style={{overflowX:'auto'}}>
+            <table className="tbl">
+              <thead><tr>
+                <th>Date</th><th>Leads</th><th style={{color:'var(--green)'}}>Validés</th>
+                <th style={{color:'#ffd740'}}>En attente</th><th style={{color:'var(--red)'}}>Supprimés</th>
+                <th style={{color:'var(--green)'}}>CA du jour</th>
+              </tr></thead>
+              <tbody>
+                {days.filter(d => d.total > 0).map(d => {
+                  const isToday = isCurrentMonth && d.day === today;
+                  const dateObj = new Date(viewYear, viewMonth, d.day);
+                  return (
+                    <tr key={d.day} style={isToday ? {background:'rgba(0,210,200,0.05)'} : {}}>
+                      <td style={{whiteSpace:'nowrap',fontWeight: isToday ? 600 : 400}}>
+                        {dateObj.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'})}
+                        {isToday && <span style={{fontSize:'9px',color:'var(--teal)',marginLeft:'6px',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>AUJOURD'HUI</span>}
+                      </td>
+                      <td>{d.total}</td>
+                      <td style={{color: d.valide > 0 ? 'var(--green)' : 'var(--muted)',fontWeight: d.valide > 0 ? 600 : 400}}>{d.valide || '—'}</td>
+                      <td style={{color: d.attente > 0 ? '#ffd740' : 'var(--muted)'}}>{d.attente || '—'}</td>
+                      <td style={{color: d.supprime > 0 ? 'var(--red)' : 'var(--muted)'}}>{d.supprime || '—'}</td>
+                      <td style={{color: d.ca > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: d.ca > 0 ? 700 : 400}}>
+                        {d.ca > 0 ? d.ca.toFixed(2) + ' €' : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr style={{borderTop:'1px solid rgba(0,210,200,0.2)',fontWeight:700,background:'rgba(0,210,200,0.03)'}}>
+                  <td style={{color:'var(--teal)',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>TOTAL</td>
+                  <td>{totalLeads}</td>
+                  <td style={{color:'var(--green)'}}>{totalValide}</td>
+                  <td style={{color:'#ffd740'}}>{monthLeads.filter(l => l.statut === 'en_attente').length}</td>
+                  <td style={{color:'var(--red)'}}>{monthLeads.filter(l => l.statut === 'supprime').length}</td>
+                  <td style={{color:'var(--green)',fontSize:'13px'}}>{totalCA.toFixed(2)} €</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const STATUT_CFG = {
   valide:     { bg:'rgba(0,230,118,0.12)',   color:'var(--green)', border:'rgba(0,230,118,0.3)',   label:'✓ VALIDÉ' },
   supprime:   { bg:'rgba(255,68,68,0.1)',    color:'var(--red)',   border:'rgba(255,68,68,0.25)',   label:'✕ SUPPRIMÉ' },
@@ -450,6 +576,9 @@ export default function ConseillerPage({ me, onLogout }) {
             <div className="sb-dot"></div>Mes leads
             {myLeads.length > 0 && <span className="sb-tag">{myLeads.length}</span>}
           </div>
+          <div className={`sb-row ${tab==='moca'?'on':''}`} onClick={() => setTab('moca')}>
+            <div className="sb-dot"></div>Mon CA
+          </div>
           <div className="sb-sec">Clients actifs</div>
           {Object.entries(clientCounts).map(([name, count]) => (
             <div key={name} className="sb-row">
@@ -478,6 +607,12 @@ export default function ConseillerPage({ me, onLogout }) {
             <div className="mob-bar-uname">{me?.name}</div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCO</button>
           </div>
+        </div>
+
+        <div className="mob-tabs">
+          <button className={`mob-tab ${tab==='quali'?'on':''}`} onClick={() => setTab('quali')}>📋 Campagnes</button>
+          <button className={`mob-tab ${tab==='histo'?'on':''}`} onClick={() => setTab('histo')}>⭐ Mes leads</button>
+          <button className={`mob-tab ${tab==='moca'?'on':''}`} onClick={() => setTab('moca')}>💶 Mon CA</button>
         </div>
 
         <div className="main" style={tab === 'quali' ? {gridTemplateRows:'auto auto 1fr'} : {}}>
@@ -601,6 +736,18 @@ export default function ConseillerPage({ me, onLogout }) {
                   <HistoriqueTab myLeads={myLeads} />
                 </div>
               </div>
+            </>
+          )}
+
+          {tab === 'moca' && (
+            <>
+              <div className="topbar">
+                <div>
+                  <div className="tp-path">WICALL / MON CA</div>
+                  <div className="tp-title">Chiffre d'affaires mensuel</div>
+                </div>
+              </div>
+              <MonCATab myLeads={myLeads} campaigns={campaigns} />
             </>
           )}
         </div>

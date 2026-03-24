@@ -17,8 +17,8 @@ export default function App() {
     if (token) {
       apiCall('GET', '/auth/me')
         .then(user => {
-          setMe({ role: user.role, name: user.full_name });
-          setPage(user.role === 'manager' ? 'manager' : 'conseiller');
+          setMe({ role: user.role, name: user.full_name, billing_access: user.billing_access });
+          setPage(user.role === 'manager' || user.role === 'super_admin' ? 'manager' : 'conseiller');
         })
         .catch(() => {
           setToken(null);
@@ -32,8 +32,8 @@ export default function App() {
   const handleLogin = async (username, password) => {
     const data = await loginAPI(username, password);
     setToken(data.access_token);
-    setMe({ role: data.role, name: data.full_name });
-    setPage(data.role === 'manager' ? 'manager' : 'conseiller');
+    setMe({ role: data.role, name: data.full_name, billing_access: data.billing_access });
+    setPage(data.role === 'manager' || data.role === 'super_admin' ? 'manager' : 'conseiller');
   };
 
   const handleLogout = () => {

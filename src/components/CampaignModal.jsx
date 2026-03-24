@@ -23,6 +23,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
   const [isNational, setIsNational] = useState(true);
   const [cpText, setCpText] = useState('');
   const [note, setNote] = useState('');
+  const [tauxEval, setTauxEval] = useState(100);
   const [criteres, setCriteres] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +54,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
         setCpText(Array.isArray(campaign.cp) ? campaign.cp.join(', ') : '');
       }
       setCriteres((campaign.criteres_custom || []).map(c => c.label));
+      setTauxEval(campaign.taux_evaluation ?? 100);
     }
   }, [campaign]);
 
@@ -110,6 +112,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
       age_max: finalAgeMax,
       alerte: note.trim() || null,
       actif: true,
+      taux_evaluation: parseInt(tauxEval) || 100,
       criteres_custom: criteres.filter(c => c.trim()).map(c => ({ label: c.trim() }))
     };
 
@@ -146,7 +149,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Tag + CPL */}
+          {/* Tag + CPL + Taux éval */}
           <div className="fr">
             <div className="fg2">
               <label>Type / Secteur</label>
@@ -158,6 +161,15 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
               <label>CPL (€)</label>
               <input className="fi" type="text" placeholder="12€"
                 value={cpl} onChange={e => setCpl(e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Taux d'évaluation (%)</label>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                <input className="fi" type="number" min="0" max="100" placeholder="100"
+                  value={tauxEval} onChange={e => setTauxEval(Math.min(100, Math.max(0, e.target.value)))}
+                  style={{width:'70px'}} />
+                <span style={{fontSize:'11px',color:'var(--muted2)'}}>% du CPL retenu en CA</span>
+              </div>
             </div>
           </div>
 
