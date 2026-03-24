@@ -369,7 +369,9 @@ export default function ManagerPage({ me, onLogout }) {
                   <div style={{overflowX:'auto'}}>
                     <table className="tbl">
                       <thead><tr>
-                        <th>Date</th><th>Conseiller</th><th>Campagne</th><th>Prospect</th><th>Tél.</th><th>CP</th><th>Commentaire</th>
+                        <th>Date</th><th>Conseiller</th><th>Campagne</th><th>Civ.</th>
+                        <th>Nom</th><th>Prénom</th><th>Adresse</th><th>CP</th><th>Ville</th>
+                        <th>Tél.</th><th>Mail</th><th>Rappel</th><th>Note</th>
                       </tr></thead>
                       <tbody>
                         {leads.map(l => {
@@ -377,6 +379,11 @@ export default function ManagerPage({ me, onLogout }) {
                           const d = new Date(l.created_at);
                           const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
                             + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+                          const nd = v => v || <span style={{color:'var(--muted)'}}>—</span>;
+                          const rappel = l.date_rappel
+                            ? new Date(l.date_rappel).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'})
+                              + (l.heure_rappel ? ' ' + l.heure_rappel : '')
+                            : null;
                           return (
                             <tr key={l.id}>
                               <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
@@ -392,10 +399,16 @@ export default function ManagerPage({ me, onLogout }) {
                                   </div>
                                 </div>
                               </td>
-                              <td style={{fontSize:'12px'}}>{l.nom_prospect || <span style={{color:'var(--muted)'}}>—</span>}</td>
-                              <td style={{fontSize:'12px',color:'var(--teal)'}}>{l.telephone || <span style={{color:'var(--muted)'}}>—</span>}</td>
-                              <td style={{fontSize:'12px'}}>{l.cp || <span style={{color:'var(--muted)'}}>—</span>}</td>
-                              <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'200px'}}>{l.commentaire || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                              <td style={{fontSize:'11px',color:'var(--muted2)'}}>{nd(l.civilite)}</td>
+                              <td style={{fontSize:'12px'}}>{nd(l.nom_prospect)}</td>
+                              <td style={{fontSize:'12px'}}>{nd(l.prenom)}</td>
+                              <td style={{fontSize:'11px',maxWidth:'140px'}}>{nd(l.adresse)}</td>
+                              <td style={{fontSize:'11px'}}>{nd(l.cp)}</td>
+                              <td style={{fontSize:'11px'}}>{nd(l.ville)}</td>
+                              <td style={{fontSize:'12px',color:'var(--teal)',whiteSpace:'nowrap'}}>{nd(l.telephone)}</td>
+                              <td style={{fontSize:'11px',maxWidth:'140px'}}>{nd(l.email)}</td>
+                              <td style={{fontSize:'11px',whiteSpace:'nowrap',color:'var(--text2)'}}>{nd(rappel)}</td>
+                              <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'160px'}}>{nd(l.commentaire)}</td>
                             </tr>
                           );
                         })}

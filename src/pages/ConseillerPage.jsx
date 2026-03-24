@@ -101,12 +101,39 @@ function CampaignCard({ camp, status, S, selected, onSelect }) {
   );
 }
 
+function fmtTel(val) {
+  const digits = val.replace(/\D/g, '').substring(0, 11);
+  if (digits.startsWith('33') && digits.length >= 2) {
+    const parts = ['33'];
+    const rest = digits.substring(2);
+    if (rest.length > 0) parts.push(rest.substring(0, 1));
+    if (rest.length > 1) parts.push(rest.substring(1, 3));
+    if (rest.length > 3) parts.push(rest.substring(3, 5));
+    if (rest.length > 5) parts.push(rest.substring(5, 7));
+    if (rest.length > 7) parts.push(rest.substring(7, 9));
+    return parts.join(' ');
+  }
+  return digits.substring(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ');
+}
+
 function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
-  const [nomProspect, setNomProspect] = useState('');
-  const [commentaire, setCommentaire] = useState('');
+  const [form, setForm] = useState({
+    civilite: '',
+    nom: '',
+    prenom: '',
+    adresse: '',
+    cp: S.cp || '',
+    ville: '',
+    telephone: S.telephone || '',
+    email: '',
+    date_rappel: '',
+    heure_rappel: '',
+    commentaire: '',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const camps = allCamps.filter(c => selectedCamps.has(c.id));
 
   const handleSubmit = async () => {
@@ -116,10 +143,17 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
       for (const camp of camps) {
         await apiCall('POST', '/leads/', {
           campaign_id: camp.id,
-          nom_prospect: nomProspect.trim() || null,
-          telephone: S.telephone.trim() || null,
-          cp: S.cp || null,
-          commentaire: commentaire.trim() || null,
+          civilite: form.civilite || null,
+          nom_prospect: form.nom.trim() || null,
+          prenom: form.prenom.trim() || null,
+          adresse: form.adresse.trim() || null,
+          cp: form.cp.trim() || null,
+          ville: form.ville.trim() || null,
+          telephone: form.telephone.trim() || null,
+          email: form.email.trim() || null,
+          date_rappel: form.date_rappel || null,
+          heure_rappel: form.heure_rappel || null,
+          commentaire: form.commentaire.trim() || null,
         });
       }
       onSuccess(camps.length);
@@ -131,7 +165,7 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
 
   return (
     <div className="mo">
-      <div className="mo-box" style={{maxWidth:'480px'}}>
+      <div className="mo-box" style={{maxWidth:'560px'}}>
         <div className="mo-head">
           <div className="mo-title">QUALIFIER EN LEAD</div>
           <button className="mo-x" onClick={onClose}>✕</button>
@@ -153,23 +187,83 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
             })}
           </div>
 
-          <div className="fr" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'12px'}}>
+          {/* Ligne 1 : civilité + nom + prénom */}
+          <div style={{display:'grid',gridTemplateColumns:'100px 1fr 1fr',gap:'10px',marginBottom:'10px'}}>
             <div className="fg2">
-              <label>Nom du prospect</label>
-              <input className="fi" type="text" placeholder="Jean Dupont"
-                value={nomProspect} onChange={e => setNomProspect(e.target.value)} />
+              <label>Civilité</label>
+              <select className="fi" value={form.civilite} onChange={e => set('civilite', e.target.value)}>
+                <option value="">—</option>
+                <option value="M.">M.</option>
+                <option value="Mme">Mme</option>
+              </select>
             </div>
             <div className="fg2">
-              <label>Téléphone</label>
-              <input className="fi" type="text" placeholder="06 12 34 56 78"
-                value={S.telephone} readOnly style={{opacity:0.7}} />
+              <label>Nom</label>
+              <input className="fi" type="text" placeholder="Dupont"
+                value={form.nom} onChange={e => set('nom', e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Prénom</label>
+              <input className="fi" type="text" placeholder="Jean"
+                value={form.prenom} onChange={e => set('prenom', e.target.value)} />
             </div>
           </div>
 
-          <div className="fg2" style={{marginBottom:'12px'}}>
-            <label>Commentaire (optionnel)</label>
+          {/* Ligne 2 : adresse */}
+          <div className="fg2" style={{marginBottom:'10px'}}>
+            <label>Adresse</label>
+            <input className="fi" type="text" placeholder="12 rue de la Paix"
+              value={form.adresse} onChange={e => set('adresse', e.target.value)} />
+          </div>
+
+          {/* Ligne 3 : CP + ville */}
+          <div style={{display:'grid',gridTemplateColumns:'120px 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>CP</label>
+              <input className="fi" type="text" maxLength="5" placeholder="75001"
+                inputMode="numeric" value={form.cp} onChange={e => set('cp', e.target.value.replace(/\D/g,'').substring(0,5))} />
+            </div>
+            <div className="fg2">
+              <label>Ville</label>
+              <input className="fi" type="text" placeholder="Paris"
+                value={form.ville} onChange={e => set('ville', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Ligne 4 : téléphone + mail */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>Téléphone</label>
+              <input className="fi" type="tel" maxLength="17" placeholder="33 6 12 34 56 78"
+                inputMode="numeric" value={form.telephone}
+                onChange={e => set('telephone', fmtTel(e.target.value))} />
+            </div>
+            <div className="fg2">
+              <label>Mail</label>
+              <input className="fi" type="email" placeholder="jean.dupont@email.com"
+                value={form.email} onChange={e => set('email', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Ligne 5 : date + heure de rappel */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>Date de rappel</label>
+              <input className="fi" type="date"
+                value={form.date_rappel} onChange={e => set('date_rappel', e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Heure de rappel</label>
+              <input className="fi" type="time"
+                value={form.heure_rappel} onChange={e => set('heure_rappel', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Note */}
+          <div className="fg2" style={{marginBottom:'10px'}}>
+            <label>Note (optionnel)</label>
             <textarea className="fi" rows="3" placeholder="Notes sur le prospect, remarques..."
-              value={commentaire} onChange={e => setCommentaire(e.target.value)}
+              value={form.commentaire} onChange={e => set('commentaire', e.target.value)}
               style={{resize:'vertical',minHeight:'70px',fontFamily:'inherit'}} />
           </div>
 
@@ -186,8 +280,9 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
   );
 }
 
+const D = v => v ? v : <span style={{color:'var(--muted)'}}>—</span>;
+
 function HistoriqueTab({ myLeads }) {
-  const TCOL2 = TCOL;
   if (myLeads.length === 0) {
     return (
       <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
@@ -200,14 +295,20 @@ function HistoriqueTab({ myLeads }) {
     <div style={{overflowX:'auto'}}>
       <table className="tbl">
         <thead><tr>
-          <th>Date</th><th>Campagne</th><th>Prospect</th><th>Tél.</th><th>Commentaire</th>
+          <th>Date</th><th>Campagne</th><th>Civ.</th><th>Nom</th><th>Prénom</th>
+          <th>Adresse</th><th>CP</th><th>Ville</th><th>Tél.</th><th>Mail</th>
+          <th>Rappel</th><th>Note</th>
         </tr></thead>
         <tbody>
           {myLeads.map(l => {
-            const col = TCOL2[l.campaign_tag] || '#7ab8b5';
+            const col = TCOL[l.campaign_tag] || '#7ab8b5';
             const d = new Date(l.created_at);
             const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
               + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+            const rappel = l.date_rappel
+              ? new Date(l.date_rappel).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'})
+                + (l.heure_rappel ? ' ' + l.heure_rappel : '')
+              : null;
             return (
               <tr key={l.id}>
                 <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
@@ -220,9 +321,16 @@ function HistoriqueTab({ myLeads }) {
                     </div>
                   </div>
                 </td>
-                <td style={{fontSize:'12px'}}>{l.nom_prospect || <span style={{color:'var(--muted)'}}>—</span>}</td>
-                <td style={{fontSize:'12px',color:'var(--teal)'}}>{l.telephone || <span style={{color:'var(--muted)'}}>—</span>}</td>
-                <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'200px'}}>{l.commentaire || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                <td style={{fontSize:'11px',color:'var(--muted2)'}}>{D(l.civilite)}</td>
+                <td style={{fontSize:'12px'}}>{D(l.nom_prospect)}</td>
+                <td style={{fontSize:'12px'}}>{D(l.prenom)}</td>
+                <td style={{fontSize:'11px',maxWidth:'140px'}}>{D(l.adresse)}</td>
+                <td style={{fontSize:'11px'}}>{D(l.cp)}</td>
+                <td style={{fontSize:'11px'}}>{D(l.ville)}</td>
+                <td style={{fontSize:'12px',color:'var(--teal)',whiteSpace:'nowrap'}}>{D(l.telephone)}</td>
+                <td style={{fontSize:'11px',maxWidth:'140px'}}>{D(l.email)}</td>
+                <td style={{fontSize:'11px',whiteSpace:'nowrap',color:'var(--text2)'}}>{D(rappel)}</td>
+                <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'160px'}}>{D(l.commentaire)}</td>
               </tr>
             );
           })}
@@ -264,8 +372,20 @@ export default function ConseillerPage({ me, onLogout }) {
   };
 
   const handleTel = (val) => {
-    const digits = val.replace(/\D/g, '').substring(0, 10);
-    const fmt = digits.replace(/(\d{2})(?=\d)/g, '$1 ');
+    const digits = val.replace(/\D/g, '').substring(0, 11);
+    let fmt;
+    if (digits.startsWith('33') && digits.length >= 2) {
+      const parts = ['33'];
+      const rest = digits.substring(2);
+      if (rest.length > 0) parts.push(rest.substring(0, 1));
+      if (rest.length > 1) parts.push(rest.substring(1, 3));
+      if (rest.length > 3) parts.push(rest.substring(3, 5));
+      if (rest.length > 5) parts.push(rest.substring(5, 7));
+      if (rest.length > 7) parts.push(rest.substring(7, 9));
+      fmt = parts.join(' ');
+    } else {
+      fmt = digits.substring(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ');
+    }
     setS(prev => ({ ...prev, telephone: fmt }));
   };
 
@@ -388,7 +508,7 @@ export default function ConseillerPage({ me, onLogout }) {
                 </div>
                 <div className="ibox">
                   <span className="ilbl">Tél.</span>
-                  <input className="iin tel-iin" type="tel" maxLength="14" placeholder="06 12 34 56 78"
+                  <input className="iin tel-iin" type="tel" maxLength="17" placeholder="33 6 12 34 56 78"
                     inputMode="numeric" value={S.telephone} onChange={e => handleTel(e.target.value)} />
                 </div>
               </div>
