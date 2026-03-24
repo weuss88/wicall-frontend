@@ -217,6 +217,114 @@ function LeadEditModal({ lead, onSave, onClose }) {
   );
 }
 
+function ManagerCATab({ leads, campaigns }) {
+  const now = new Date();
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [filterCons, setFilterCons] = useState('');
+
+  const conseillers = [...new Map(leads.map(l => [l.conseiller_id, {id: l.conseiller_id, name: l.conseiller_name}])).values()];
+  const filtered = filterCons ? leads.filter(l => String(l.conseiller_id) === filterCons) : leads;
+  const monthLeads = filtered.filter(l => {
+    const d = new Date(l.created_at);
+    return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+  });
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = now.getDate();
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
+  const days = Array.from({length: daysInMonth}, (_, i) => {
+    const day = i + 1;
+    const dl = monthLeads.filter(l => new Date(l.created_at).getDate() === day);
+    const valides = dl.filter(l => l.statut === 'valide');
+    const ca = valides.reduce((s, l) => {
+      const camp = campaigns.find(c => c.id === l.campaign_id);
+      return s + parseCPL(camp?.cpl) * (camp?.taux_evaluation ?? 100) / 100;
+    }, 0);
+    return { day, total: dl.length, valide: valides.length, attente: dl.filter(l => l.statut === 'en_attente').length, supprime: dl.filter(l => l.statut === 'supprime').length, ca };
+  });
+
+  const totalCA = days.reduce((s, d) => s + d.ca, 0);
+  const totalLeads = monthLeads.length;
+  const totalValide = monthLeads.filter(l => l.statut === 'valide').length;
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1); } else setViewMonth(m => m-1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1); } else setViewMonth(m => m+1); };
+  const canNext = viewYear < now.getFullYear() || (viewYear === now.getFullYear() && viewMonth < now.getMonth());
+
+  return (
+    <div className="mgr-body">
+      <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
+        <button className="btn-r" onClick={prevMonth}>← Préc.</button>
+        <div style={{fontFamily:'Rajdhani,sans-serif',fontSize:'16px',fontWeight:700,color:'var(--teal)',letterSpacing:'1px',minWidth:'180px',textAlign:'center'}}>
+          {MOIS_FR[viewMonth].toUpperCase()} {viewYear}
+        </div>
+        {canNext && <button className="btn-r" onClick={nextMonth}>Suiv. →</button>}
+        {conseillers.length > 0 && (
+          <select className="fi" style={{width:'auto',padding:'6px 12px',marginLeft:'auto'}} value={filterCons} onChange={e => setFilterCons(e.target.value)}>
+            <option value="">Tous les conseillers</option>
+            {conseillers.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+          </select>
+        )}
+      </div>
+      <div className="stats-row">
+        <div className="stat-card"><div className="stat-ico">📋</div><div><div className="stat-val">{totalLeads}</div><div className="stat-lbl">Leads total</div></div></div>
+        <div className="stat-card"><div className="stat-ico" style={{color:'var(--green)'}}>✓</div><div><div className="stat-val">{totalValide}</div><div className="stat-lbl">Validés</div></div></div>
+        <div className="stat-card" style={{border:'1px solid rgba(0,230,118,0.3)',background:'rgba(0,230,118,0.06)'}}><div className="stat-ico">💶</div><div><div className="stat-val" style={{color:'var(--green)'}}>{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div></div>
+        <div className="stat-card"><div className="stat-ico">📅</div><div><div className="stat-val">{days.filter(d => d.total > 0).length}</div><div className="stat-lbl">Jours actifs</div></div></div>
+      </div>
+      <div className="mgr-card">
+        <div className="mgr-head">
+          <div className="mgr-head-title">DÉTAIL PAR JOUR{filterCons ? ` — ${conseillers.find(c => String(c.id) === filterCons)?.name || ''}` : ' — TOUS'}</div>
+        </div>
+        {totalLeads === 0 ? (
+          <div style={{textAlign:'center',padding:'40px',color:'var(--muted)',fontSize:'13px'}}>Aucun lead ce mois</div>
+        ) : (
+          <div style={{overflowX:'auto'}}>
+            <table className="tbl">
+              <thead><tr>
+                <th>Date</th><th>Leads</th><th style={{color:'var(--green)'}}>Validés</th>
+                <th style={{color:'#ffd740'}}>En attente</th><th style={{color:'var(--red)'}}>Supprimés</th>
+                <th style={{color:'var(--green)'}}>CA du jour</th>
+              </tr></thead>
+              <tbody>
+                {days.filter(d => d.total > 0).map(d => {
+                  const isToday = isCurrentMonth && d.day === today;
+                  const dateObj = new Date(viewYear, viewMonth, d.day);
+                  return (
+                    <tr key={d.day} style={isToday ? {background:'rgba(0,210,200,0.05)'} : {}}>
+                      <td style={{whiteSpace:'nowrap',fontWeight:isToday?600:400}}>
+                        {dateObj.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'})}
+                        {isToday && <span style={{fontSize:'9px',color:'var(--teal)',marginLeft:'6px',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>AUJOURD'HUI</span>}
+                      </td>
+                      <td>{d.total}</td>
+                      <td style={{color:d.valide>0?'var(--green)':'var(--muted)',fontWeight:d.valide>0?600:400}}>{d.valide||'—'}</td>
+                      <td style={{color:d.attente>0?'#ffd740':'var(--muted)'}}>{d.attente||'—'}</td>
+                      <td style={{color:d.supprime>0?'var(--red)':'var(--muted)'}}>{d.supprime||'—'}</td>
+                      <td style={{color:d.ca>0?'var(--green)':'var(--muted)',fontWeight:d.ca>0?700:400}}>
+                        {d.ca>0?d.ca.toFixed(2)+' €':'—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr style={{borderTop:'1px solid rgba(0,210,200,0.2)',fontWeight:700,background:'rgba(0,210,200,0.03)'}}>
+                  <td style={{color:'var(--teal)',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>TOTAL</td>
+                  <td>{totalLeads}</td>
+                  <td style={{color:'var(--green)'}}>{totalValide}</td>
+                  <td style={{color:'#ffd740'}}>{monthLeads.filter(l => l.statut==='en_attente').length}</td>
+                  <td style={{color:'var(--red)'}}>{monthLeads.filter(l => l.statut==='supprime').length}</td>
+                  <td style={{color:'var(--green)',fontSize:'13px'}}>{totalCA.toFixed(2)} €</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ManagerPage({ me, onLogout }) {
   const now = new Date();
   const isSuperAdmin = me?.role === 'super_admin';
@@ -233,7 +341,9 @@ export default function ManagerPage({ me, onLogout }) {
   const [search, setSearch] = useState('');
   const [billingMonth, setBillingMonth] = useState(now.getMonth());
   const [billingYear, setBillingYear] = useState(now.getFullYear());
-  // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, saving, error }
+  const [filterLeadCons, setFilterLeadCons] = useState('');
+  const [filterLeadCamp, setFilterLeadCamp] = useState('');
+  // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, newRole, billingAccess, saving, error }
 
   const loadCampaigns = useCallback(async () => {
     try {
@@ -273,7 +383,8 @@ export default function ManagerPage({ me, onLogout }) {
   const handleTabChange = (newTab) => {
     setTab(newTab);
     if (newTab === 'cons') loadUsers();
-    if (newTab === 'leads' || newTab === 'billing') { loadLeads(); }
+    if (newTab === 'leads' || newTab === 'billing' || newTab === 'stats') loadLeads();
+    if (newTab === 'billing') loadUsers();
   };
 
   const handleSaveCampaign = async (data, id) => {
@@ -308,8 +419,8 @@ export default function ManagerPage({ me, onLogout }) {
     }
   };
 
-  const openAddUser = () => setUserDlg({ mode: 'add', user: null, username: '', fullName: '', password: '', saving: false, error: '' });
-  const openEditUser = (user) => setUserDlg({ mode: 'edit', user, username: user.username, fullName: user.full_name || '', password: '', saving: false, error: '' });
+  const openAddUser = () => setUserDlg({ mode: 'add', user: null, username: '', fullName: '', password: '', newRole: 'conseiller', billingAccess: false, saving: false, error: '' });
+  const openEditUser = (user) => setUserDlg({ mode: 'edit', user, username: user.username, fullName: user.full_name || '', password: '', newRole: user.role || 'conseiller', billingAccess: !!user.billing_access, saving: false, error: '' });
   const closeUserDlg = () => setUserDlg(null);
 
   const handleDeleteUser = async (user) => {
@@ -330,10 +441,13 @@ export default function ManagerPage({ me, onLogout }) {
     setUserDlg(d => ({ ...d, saving: true, error: '' }));
     try {
       if (mode === 'add') {
-        await apiCall('POST', '/auth/register', { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: 'conseiller' });
+        const regBody = { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: canBilling ? userDlg.newRole : 'conseiller' };
+        if (canBilling && userDlg.newRole === 'manager') regBody.billing_access = userDlg.billingAccess;
+        await apiCall('POST', '/auth/register', regBody);
       } else {
         const body = { full_name: fullName.trim() };
         if (password.trim()) body.password = password.trim();
+        if (canBilling) { body.role = userDlg.newRole; if (userDlg.newRole === 'manager') body.billing_access = userDlg.billingAccess; }
         await apiCall('PUT', '/users/' + user.id, body);
       }
       closeUserDlg();
@@ -358,6 +472,14 @@ export default function ManagerPage({ me, onLogout }) {
       )
     : campaigns;
 
+  const filteredLeads = leads.filter(l => {
+    if (filterLeadCons && String(l.conseiller_id) !== filterLeadCons) return false;
+    if (filterLeadCamp && String(l.campaign_id) !== filterLeadCamp) return false;
+    return true;
+  });
+  const leadConseillers = [...new Map(leads.map(l => [l.conseiller_id, {id: l.conseiller_id, name: l.conseiller_name}])).values()];
+  const leadCampagnes = [...new Map(leads.map(l => [l.campaign_id, {id: l.campaign_id, nom: l.campaign_nom}])).values()];
+
   return (
     <div className="page">
       <div className="shell">
@@ -377,6 +499,9 @@ export default function ManagerPage({ me, onLogout }) {
           <div className={`sb-row ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>
             <div className="sb-dot"></div>Leads
             {totalLeads > 0 && <span className="sb-tag">{totalLeads}</span>}
+          </div>
+          <div className={`sb-row ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>
+            <div className="sb-dot"></div>Stats CA
           </div>
           {canBilling && (
             <div className={`sb-row ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>
@@ -417,6 +542,7 @@ export default function ManagerPage({ me, onLogout }) {
           <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>
           <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>
           <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>
+          <button className={`mob-tab ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>📊 Stats CA</button>
           {canBilling && <button className={`mob-tab ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>💶 Facturation</button>}
         </div>
 
@@ -425,7 +551,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="topbar">
             <div>
               <div className="tp-path">WICALL / MANAGER</div>
-              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : tab==='billing' ? 'Facturation' : 'Leads Qualifiés'}</div>
+              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : tab==='billing' ? 'Facturation' : tab==='stats' ? 'Stats CA' : 'Leads Qualifiés'}</div>
             </div>
             {tab === 'camp' && (
               <div className="tp-right">
@@ -589,13 +715,28 @@ export default function ManagerPage({ me, onLogout }) {
                 </div>
               </div>
               <div className="mgr-card">
-                <div className="mgr-head">
-                  <div className="mgr-head-title">TOUS LES LEADS</div>
-                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                    <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadLeads}>↺ Actualiser</button>
-                    {leads.length > 0 && (
+                <div className="mgr-head" style={{flexWrap:'wrap',gap:'8px'}}>
+                  <div className="mgr-head-title">
+                    LEADS
+                    {(filterLeadCons || filterLeadCamp) && <span style={{color:'var(--teal)',fontSize:'10px',marginLeft:'8px'}}>({filteredLeads.length} / {leads.length})</span>}
+                  </div>
+                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center'}}>
+                    {leadConseillers.length > 1 && (
+                      <select className="fi" style={{width:'auto',padding:'4px 8px',fontSize:'11px'}} value={filterLeadCons} onChange={e => setFilterLeadCons(e.target.value)}>
+                        <option value="">Tous les conseillers</option>
+                        {leadConseillers.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                      </select>
+                    )}
+                    {leadCampagnes.length > 1 && (
+                      <select className="fi" style={{width:'auto',padding:'4px 8px',fontSize:'11px'}} value={filterLeadCamp} onChange={e => setFilterLeadCamp(e.target.value)}>
+                        <option value="">Toutes les campagnes</option>
+                        {leadCampagnes.map(c => <option key={c.id} value={String(c.id)}>{c.nom}</option>)}
+                      </select>
+                    )}
+                    <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadLeads}>↺</button>
+                    {filteredLeads.length > 0 && (
                       <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,230,118,0.35)',color:'var(--green)'}}
-                        onClick={() => exportCSV(leads, campaigns)}>
+                        onClick={() => exportCSV(filteredLeads, campaigns)}>
                         ↓ Export CSV
                       </button>
                     )}
@@ -615,7 +756,7 @@ export default function ManagerPage({ me, onLogout }) {
                         <th>Tél.</th><th>Mail</th><th>Rappel</th><th>Note</th><th>Actions</th>
                       </tr></thead>
                       <tbody>
-                        {leads.map(l => {
+                        {filteredLeads.map(l => {
                           const col = TCOL[l.campaign_tag] || '#7ab8b5';
                           const d = new Date(l.created_at);
                           const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
@@ -671,6 +812,19 @@ export default function ManagerPage({ me, onLogout }) {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Tab Stats CA */}
+          {tab === 'stats' && (
+            <>
+              <div className="topbar">
+                <div>
+                  <div className="tp-path">WICALL / STATS CA</div>
+                  <div className="tp-title">Chiffre d'affaires mensuel</div>
+                </div>
+              </div>
+              <ManagerCATab leads={leads} campaigns={campaigns} />
+            </>
           )}
 
           {/* Tab Facturation — super_admin uniquement */}
@@ -779,7 +933,51 @@ export default function ManagerPage({ me, onLogout }) {
                     </div>
                   )}
                 </div>
+
+              {/* Gestion des accès facturation */}
+              <div className="mgr-card" style={{marginTop:'16px'}}>
+                <div className="mgr-head">
+                  <div className="mgr-head-title">🔒 ACCÈS FACTURATION</div>
+                  <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadUsers}>↺</button>
+                </div>
+                {users.filter(u => u.role === 'manager' || u.role === 'super_admin').length === 0 ? (
+                  <div style={{padding:'20px',color:'var(--muted)',fontSize:'12px'}}>Aucun manager trouvé</div>
+                ) : (
+                  <table className="tbl">
+                    <thead><tr>
+                      <th>Manager</th><th>Identifiant</th><th>Rôle</th><th style={{textAlign:'center'}}>Accès facturation</th>
+                    </tr></thead>
+                    <tbody>
+                      {users.filter(u => u.role === 'manager' || u.role === 'super_admin').map(u => (
+                        <tr key={u.id}>
+                          <td><div className="t-name">{u.full_name || u.username}</div></td>
+                          <td style={{color:'var(--muted2)',fontSize:'11px'}}>{u.username}</td>
+                          <td>
+                            <span style={{fontSize:'10px',color: u.role==='super_admin'?'var(--teal)':'var(--text2)',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>
+                              {u.role === 'super_admin' ? '🔑 SUPER ADMIN' : 'MANAGER'}
+                            </span>
+                          </td>
+                          <td style={{textAlign:'center'}}>
+                            <label className="tog">
+                              <input type="checkbox" checked={!!u.billing_access || u.role === 'super_admin'}
+                                disabled={u.role === 'super_admin'}
+                                onChange={async () => {
+                                  try {
+                                    await apiCall('PUT', '/users/' + u.id, { billing_access: !u.billing_access });
+                                    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, billing_access: !x.billing_access } : x));
+                                  } catch (e) { alert('Erreur: ' + e.message); }
+                                }} />
+                              <div className="tog-track"></div>
+                              <div className="tog-thumb"></div>
+                            </label>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
+            </div>
             );
           })()}
         </div>
@@ -797,7 +995,7 @@ export default function ManagerPage({ me, onLogout }) {
         <div className="mo">
           <div className="mo-box" style={{maxWidth:'420px'}}>
             <div className="mo-head">
-              <div className="mo-title">{userDlg.mode === 'add' ? 'NOUVEAU CONSEILLER' : 'MODIFIER LE CONSEILLER'}</div>
+              <div className="mo-title">{userDlg.mode === 'add' ? 'NOUVEL UTILISATEUR' : 'MODIFIER L\'UTILISATEUR'}</div>
               <button className="mo-x" onClick={closeUserDlg}>✕</button>
             </div>
             <div className="mo-body">
@@ -828,6 +1026,28 @@ export default function ManagerPage({ me, onLogout }) {
                     onKeyDown={e => e.key === 'Enter' && handleSaveUser()} />
                 </div>
               </div>
+              {canBilling && (
+                <div className="fr full">
+                  <div className="fg2">
+                    <label>Rôle</label>
+                    <select className="fi" value={userDlg.newRole} onChange={e => setUserDlg(d => ({ ...d, newRole: e.target.value }))}>
+                      <option value="conseiller">Conseiller</option>
+                      <option value="manager">Manager</option>
+                    </select>
+                  </div>
+                  {userDlg.newRole === 'manager' && (
+                    <div className="fg2" style={{display:'flex',alignItems:'center',gap:'10px',paddingTop:'24px'}}>
+                      <label className="tog">
+                        <input type="checkbox" checked={userDlg.billingAccess}
+                          onChange={e => setUserDlg(d => ({ ...d, billingAccess: e.target.checked }))} />
+                        <div className="tog-track"></div>
+                        <div className="tog-thumb"></div>
+                      </label>
+                      <span style={{fontSize:'11px',color:'var(--text2)'}}>Accès facturation 🔒</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {userDlg.error && (
                 <div style={{color:'var(--red)',fontSize:'12px',padding:'6px 0'}}>{userDlg.error}</div>
               )}
