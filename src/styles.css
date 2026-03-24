@@ -451,7 +451,6 @@ select.fi option{background:var(--panel);}
 .btn-cancel:hover{border-color:var(--muted2);color:var(--text);}
 
 /* LEADS — sélection campagne */
-.cc-check{position:absolute;top:10px;right:10px;}
 .cc-checkbox{
   width:20px;height:20px;border-radius:50%;
   border:2px solid rgba(0,230,118,0.4);
