@@ -11,12 +11,13 @@ const ALL_PAGES = [
 ];
 function isFullAccess(me) {
   if (!me) return false;
-  return me.is_owner || me.pages_access == null;
+  // is_owner explicite, ou pages_access non défini (managers créés avant la feature)
+  return !!me.is_owner || me.pages_access == null;
 }
 function hasPage(me, page) {
   if (!me) return false;
   if (isFullAccess(me)) return true;
-  return me.pages_access.includes(page);
+  return (me.pages_access || []).includes(page);
 }
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -256,7 +257,7 @@ function ManagerCATab({ leads, campaigns }) {
     const valides = dl.filter(l => l.statut === 'valide');
     const ca = valides.reduce((s, l) => {
       const camp = campaigns.find(c => c.id === l.campaign_id);
-      return s + parseCPL(camp?.cpl) * (camp?.taux_evaluation ?? 100) / 100;
+      return s + parseCPL(camp?.cpl) * (camp?.taux_devaluation ?? 100) / 100;
     }, 0);
     return { day, total: dl.length, valide: valides.length, attente: dl.filter(l => l.statut === 'en_attente').length, supprime: dl.filter(l => l.statut === 'supprime').length, ca };
   });
@@ -690,7 +691,7 @@ export default function ManagerPage({ me, onLogout }) {
                     <th>Nom</th><th>Identifiant</th><th>Statut</th><th>Actions</th>
                   </tr></thead>
                   <tbody>
-                    {users.map(u => (
+                    {users.filter(u => u.role === 'conseiller').map(u => (
                       <tr key={u.id}>
                         <td><div className="t-name">{u.full_name || u.username}</div></td>
                         <td style={{color:'var(--muted2)'}}>{u.username}</td>
@@ -917,7 +918,7 @@ export default function ManagerPage({ me, onLogout }) {
             const rows = Object.values(byCamp).map(g => {
               const camp = campaigns.find(c => c.nom === g.nom);
               const cpl = parseCPL(camp?.cpl);
-              const taux = camp?.taux_evaluation ?? 100;
+              const taux = camp?.taux_devaluation ?? 100;
               const ca = g.valides.length * cpl * taux / 100;
               return { ...g, cpl, taux, ca };
             }).sort((a, b) => b.ca - a.ca);

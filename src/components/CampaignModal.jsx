@@ -54,7 +54,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
         setCpText(Array.isArray(campaign.cp) ? campaign.cp.join(', ') : '');
       }
       setCriteres((campaign.criteres_custom || []).map(c => c.label));
-      setTauxEval(campaign.taux_evaluation ?? 100);
+      setTauxEval(campaign.taux_devaluation ?? 100);
     }
   }, [campaign]);
 
@@ -112,7 +112,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
       age_max: finalAgeMax,
       alerte: note.trim() || null,
       actif: true,
-      taux_evaluation: parseInt(tauxEval) || 100,
+      taux_devaluation: parseInt(tauxEval) || 100,
       criteres_custom: criteres.filter(c => c.trim()).map(c => ({ label: c.trim() }))
     };
 

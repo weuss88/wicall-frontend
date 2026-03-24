@@ -295,7 +295,7 @@ function MonCATab({ myLeads, campaigns }) {
   const [viewYear, setViewYear] = useState(now.getFullYear());
 
   const getCPL = l => parseCPL(campaigns.find(c => c.id === l.campaign_id)?.cpl);
-  const getTaux = l => campaigns.find(c => c.id === l.campaign_id)?.taux_evaluation ?? 100;
+  const getTaux = l => campaigns.find(c => c.id === l.campaign_id)?.taux_devaluation ?? 100;
 
   const monthLeads = useMemo(() => myLeads.filter(l => {
     const d = new Date(l.created_at);
