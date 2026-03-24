@@ -35,13 +35,14 @@ function getStatus(camp, S) {
   return 'partial';
 }
 
-function CampaignCard({ camp, status, S }) {
+function CampaignCard({ camp, status, S, selected, onSelect }) {
   const col = TCOL[camp.tag] || '#7ab8b5';
   const cp = cpMatch(camp, S.cp);
   const pills = { eligible: '✓ ÉLIGIBLE', partial: '◎ À vérifier', pending: '… En attente' };
   const cpCls = cp === 'nat' ? 'nat' : cp === 'ok' ? 'ok' : 'u';
   const cpLbl = cp === 'nat' ? '🌍 National' : cp === 'ok' ? '✓ ' + S.cp.substring(0, 2) : '? CP';
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  const isEligible = status === 'eligible';
 
   const tags = [];
   if (camp.logement) tags.push({ lbl: camp.logement.map(cap).join('/'), st: critMatch(camp, 'logement', S.logement) });
@@ -51,7 +52,18 @@ function CampaignCard({ camp, status, S }) {
     tags.push({ lbl: `${camp.age_min ?? '?'} – ${camp.age_max ?? '∞'} ans`, st: ageMatch(camp, S.age) });
 
   return (
-    <div className={`cc ${status}`}>
+    <div
+      className={`cc ${status}${selected ? ' cc-selected' : ''}`}
+      onClick={isEligible ? () => onSelect(camp.id) : undefined}
+      style={isEligible ? { cursor: 'pointer' } : {}}
+    >
+      {isEligible && (
+        <div className="cc-check">
+          <div className={`cc-checkbox ${selected ? 'checked' : ''}`}>
+            {selected && <span>✓</span>}
+          </div>
+        </div>
+      )}
       <div className="ct">
         <div className="ct-l">
           <div className="cn">
@@ -89,13 +101,150 @@ function CampaignCard({ camp, status, S }) {
   );
 }
 
+function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
+  const [nomProspect, setNomProspect] = useState('');
+  const [commentaire, setCommentaire] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const camps = allCamps.filter(c => selectedCamps.has(c.id));
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      for (const camp of camps) {
+        await apiCall('POST', '/leads/', {
+          campaign_id: camp.id,
+          nom_prospect: nomProspect.trim() || null,
+          telephone: S.telephone.trim() || null,
+          cp: S.cp || null,
+          commentaire: commentaire.trim() || null,
+        });
+      }
+      onSuccess(camps.length);
+    } catch (e) {
+      setError(e.message);
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mo">
+      <div className="mo-box" style={{maxWidth:'480px'}}>
+        <div className="mo-head">
+          <div className="mo-title">QUALIFIER EN LEAD</div>
+          <button className="mo-x" onClick={onClose}>✕</button>
+        </div>
+        <div className="mo-body">
+          <div style={{marginBottom:'16px'}}>
+            <div style={{fontSize:'10px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'8px'}}>
+              Campagne{camps.length > 1 ? 's' : ''} sélectionnée{camps.length > 1 ? 's' : ''}
+            </div>
+            {camps.map(c => {
+              const col = TCOL[c.tag] || '#7ab8b5';
+              return (
+                <div key={c.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 10px',background:'rgba(0,210,200,0.06)',border:'1px solid rgba(0,210,200,0.15)',borderRadius:'6px',marginBottom:'4px'}}>
+                  <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{c.tag}</span>
+                  <span style={{fontSize:'12px',color:'var(--text)'}}>{c.nom}</span>
+                  <span style={{fontSize:'11px',color:'var(--muted)',marginLeft:'auto'}}>{c.cpl}/lead</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="fr" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'12px'}}>
+            <div className="fg2">
+              <label>Nom du prospect</label>
+              <input className="fi" type="text" placeholder="Jean Dupont"
+                value={nomProspect} onChange={e => setNomProspect(e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Téléphone</label>
+              <input className="fi" type="text" placeholder="06 12 34 56 78"
+                value={S.telephone} readOnly style={{opacity:0.7}} />
+            </div>
+          </div>
+
+          <div className="fg2" style={{marginBottom:'12px'}}>
+            <label>Commentaire (optionnel)</label>
+            <textarea className="fi" rows="3" placeholder="Notes sur le prospect, remarques..."
+              value={commentaire} onChange={e => setCommentaire(e.target.value)}
+              style={{resize:'vertical',minHeight:'70px',fontFamily:'inherit'}} />
+          </div>
+
+          {error && <div style={{color:'var(--red)',fontSize:'12px',padding:'4px 0'}}>{error}</div>}
+        </div>
+        <div className="mo-foot">
+          <button className="btn-cancel" onClick={onClose} disabled={saving}>Annuler</button>
+          <button className="btn-save" onClick={handleSubmit} disabled={saving}>
+            {saving ? 'ENVOI...' : `✓ QUALIFIER ${camps.length > 1 ? camps.length + ' LEADS' : 'EN LEAD'}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistoriqueTab({ myLeads }) {
+  const TCOL2 = TCOL;
+  if (myLeads.length === 0) {
+    return (
+      <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
+        <div style={{fontSize:'32px',marginBottom:'12px'}}>📋</div>
+        <div style={{fontSize:'13px'}}>Aucun lead qualifié pour l'instant</div>
+      </div>
+    );
+  }
+  return (
+    <div style={{overflowX:'auto'}}>
+      <table className="tbl">
+        <thead><tr>
+          <th>Date</th><th>Campagne</th><th>Prospect</th><th>Tél.</th><th>Commentaire</th>
+        </tr></thead>
+        <tbody>
+          {myLeads.map(l => {
+            const col = TCOL2[l.campaign_tag] || '#7ab8b5';
+            const d = new Date(l.created_at);
+            const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+              + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+            return (
+              <tr key={l.id}>
+                <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
+                <td>
+                  <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                    <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{l.campaign_tag}</span>
+                    <div>
+                      <div className="t-name" style={{fontSize:'12px'}}>{l.campaign_nom}</div>
+                      <div className="t-client" style={{fontSize:'10px'}}>{l.campaign_client}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style={{fontSize:'12px'}}>{l.nom_prospect || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                <td style={{fontSize:'12px',color:'var(--teal)'}}>{l.telephone || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'200px'}}>{l.commentaire || <span style={{color:'var(--muted)'}}>—</span>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function ConseillerPage({ me, onLogout }) {
   const [campaigns, setCampaigns] = useState([]);
   const [S, setS] = useState({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' });
   const [cpLabel, setCpLabel] = useState('');
+  const [tab, setTab] = useState('quali');
+  const [selectedCamps, setSelectedCamps] = useState(new Set());
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [myLeads, setMyLeads] = useState([]);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     apiCall('GET', '/campaigns/').then(setCampaigns).catch(console.error);
+    apiCall('GET', '/leads/me').then(setMyLeads).catch(console.error);
   }, []);
 
   const ini = me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'C';
@@ -108,12 +257,34 @@ export default function ConseillerPage({ me, onLogout }) {
   };
 
   const selFilter = (key, val) => setS(prev => ({ ...prev, [key]: prev[key] === val ? null : val }));
-  const reset = () => { setS({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' }); setCpLabel(''); };
+  const reset = () => {
+    setS({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' });
+    setCpLabel('');
+    setSelectedCamps(new Set());
+  };
 
   const handleTel = (val) => {
     const digits = val.replace(/\D/g, '').substring(0, 10);
     const fmt = digits.replace(/(\d{2})(?=\d)/g, '$1 ');
     setS(prev => ({ ...prev, telephone: fmt }));
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedCamps(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleLeadSuccess = async (count) => {
+    setShowLeadModal(false);
+    setSelectedCamps(new Set());
+    const leads = await apiCall('GET', '/leads/me').catch(() => myLeads);
+    setMyLeads(leads);
+    setToast(`✓ ${count} lead${count > 1 ? 's' : ''} qualifié${count > 1 ? 's' : ''} avec succès !`);
+    setTimeout(() => setToast(''), 4000);
   };
 
   const hasCP = S.cp.length >= 2;
@@ -141,7 +312,13 @@ export default function ConseillerPage({ me, onLogout }) {
             <div><div className="sb-brand">WICALL</div><div className="sb-sub">Conseiller</div></div>
           </div>
           <div className="sb-sec">Navigation</div>
-          <div className="sb-row on"><div className="sb-dot"></div>Qualification</div>
+          <div className={`sb-row ${tab==='quali'?'on':''}`} onClick={() => setTab('quali')}>
+            <div className="sb-dot"></div>Qualification
+          </div>
+          <div className={`sb-row ${tab==='histo'?'on':''}`} onClick={() => setTab('histo')}>
+            <div className="sb-dot"></div>Mes leads
+            {myLeads.length > 0 && <span className="sb-tag">{myLeads.length}</span>}
+          </div>
           <div className="sb-sec">Clients actifs</div>
           {Object.entries(clientCounts).map(([name, count]) => (
             <div key={name} className="sb-row">
@@ -172,88 +349,143 @@ export default function ConseillerPage({ me, onLogout }) {
           </div>
         </div>
 
-        <div className="main" style={{gridTemplateRows:'auto auto 1fr'}}>
-          <div className="filters">
-            <div className="ibox">
-              <span className="ilbl">CP</span>
-              <input className="iin cp-iin" type="text" maxLength="5" placeholder="75001"
-                inputMode="numeric" value={S.cp} onChange={e => handleCP(e.target.value)} />
-              {cpLabel && <span className="ilbl-nm">{cpLabel}</span>}
-            </div>
-            <div className="fg">
-              <span className="fglbl">Logement</span>
-              <div className="fgopts">
-                <button className={`fb ${S.logement==='maison'?'on':''}`} onClick={() => selFilter('logement','maison')}>🏠 Maison</button>
-                <button className={`fb ${S.logement==='appartement'?'on':''}`} onClick={() => selFilter('logement','appartement')}>🏢 Appart</button>
+        <div className="main" style={tab === 'quali' ? {gridTemplateRows:'auto auto 1fr'} : {}}>
+          {tab === 'quali' && (
+            <>
+              <div className="filters">
+                <div className="ibox">
+                  <span className="ilbl">CP</span>
+                  <input className="iin cp-iin" type="text" maxLength="5" placeholder="75001"
+                    inputMode="numeric" value={S.cp} onChange={e => handleCP(e.target.value)} />
+                  {cpLabel && <span className="ilbl-nm">{cpLabel}</span>}
+                </div>
+                <div className="fg">
+                  <span className="fglbl">Logement</span>
+                  <div className="fgopts">
+                    <button className={`fb ${S.logement==='maison'?'on':''}`} onClick={() => selFilter('logement','maison')}>🏠 Maison</button>
+                    <button className={`fb ${S.logement==='appartement'?'on':''}`} onClick={() => selFilter('logement','appartement')}>🏢 Appart</button>
+                  </div>
+                </div>
+                <div className="fg">
+                  <span className="fglbl">Statut</span>
+                  <div className="fgopts">
+                    <button className={`fb ${S.statut==='proprietaire'?'on':''}`} onClick={() => selFilter('statut','proprietaire')}>🔑 Proprio</button>
+                    <button className={`fb ${S.statut==='locataire'?'on neg':''}`} onClick={() => selFilter('statut','locataire')}>📄 Loc.</button>
+                  </div>
+                </div>
+                <div className="fg">
+                  <span className="fglbl">Chauffage</span>
+                  <div className="fgopts">
+                    {[['gaz','🔥 Gaz'],['fioul','🛢 Fioul'],['electrique','⚡ Élec.'],['autre','♨ Autre']].map(([v,l]) => (
+                      <button key={v} className={`fb ${S.chauffage===v?'on':''}`} onClick={() => selFilter('chauffage',v)}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="ibox">
+                  <span className="ilbl">Âge</span>
+                  <input className="iin age-iin" type="number" min="18" max="99" placeholder="45"
+                    value={S.age} onChange={e => setS(prev => ({ ...prev, age: e.target.value }))} />
+                </div>
+                <div className="ibox">
+                  <span className="ilbl">Tél.</span>
+                  <input className="iin tel-iin" type="tel" maxLength="14" placeholder="06 12 34 56 78"
+                    inputMode="numeric" value={S.telephone} onChange={e => handleTel(e.target.value)} />
+                </div>
               </div>
-            </div>
-            <div className="fg">
-              <span className="fglbl">Statut</span>
-              <div className="fgopts">
-                <button className={`fb ${S.statut==='proprietaire'?'on':''}`} onClick={() => selFilter('statut','proprietaire')}>🔑 Proprio</button>
-                <button className={`fb ${S.statut==='locataire'?'on neg':''}`} onClick={() => selFilter('statut','locataire')}>📄 Loc.</button>
-              </div>
-            </div>
-            <div className="fg">
-              <span className="fglbl">Chauffage</span>
-              <div className="fgopts">
-                {[['gaz','🔥 Gaz'],['fioul','🛢 Fioul'],['electrique','⚡ Élec.'],['autre','♨ Autre']].map(([v,l]) => (
-                  <button key={v} className={`fb ${S.chauffage===v?'on':''}`} onClick={() => selFilter('chauffage',v)}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <div className="ibox">
-              <span className="ilbl">Âge</span>
-              <input className="iin age-iin" type="number" min="18" max="99" placeholder="45"
-                value={S.age} onChange={e => setS(prev => ({ ...prev, age: e.target.value }))} />
-            </div>
-            <div className="ibox">
-              <span className="ilbl">Tél.</span>
-              <input className="iin tel-iin" type="tel" maxLength="14" placeholder="06 12 34 56 78"
-                inputMode="numeric" value={S.telephone} onChange={e => handleTel(e.target.value)} />
-            </div>
-          </div>
 
-          <div className="topbar">
-            <div>
-              <div className="tp-path">WICALL / QUALIFICATION</div>
-              <div className="tp-title">Filtrage Campagnes</div>
-            </div>
-            <div className="tp-right">
-              <div className="badge-ok">
-                {hasCP ? `${eli} ÉLIGIBLE${eli !== 1 ? 'S' : ''}` : '— ÉLIGIBLES'}
+              <div className="topbar">
+                <div>
+                  <div className="tp-path">WICALL / QUALIFICATION</div>
+                  <div className="tp-title">Filtrage Campagnes</div>
+                </div>
+                <div className="tp-right">
+                  {selectedCamps.size > 0 && (
+                    <button className="btn-qualify" onClick={() => setShowLeadModal(true)}>
+                      ✓ QUALIFIER {selectedCamps.size > 1 ? selectedCamps.size + ' LEADS' : 'EN LEAD'}
+                    </button>
+                  )}
+                  <div className="badge-ok">
+                    {hasCP ? `${eli} ÉLIGIBLE${eli !== 1 ? 'S' : ''}` : '— ÉLIGIBLES'}
+                  </div>
+                  {hasCP && <span className="badge-tot">{shown.length} / {active.length}</span>}
+                  <button className="btn-r" onClick={reset}>↺ Reset</button>
+                </div>
               </div>
-              {hasCP && <span className="badge-tot">{shown.length} / {active.length}</span>}
-              <button className="btn-r" onClick={reset}>↺ Reset</button>
-            </div>
-          </div>
 
-          {!hasCP ? (
-            <div id="init-screen">
-              <div className="ic">📞</div>
-              <h2>PROSPECT EN LIGNE ?</h2>
-              <p>Saisissez le code postal du prospect pour filtrer les campagnes en temps réel.</p>
-              <span className="hint">↑ TAPEZ LE CP CI-DESSUS</span>
-            </div>
-          ) : shown.length === 0 ? (
-            <div id="init-screen">
-              <div className="ic">🔍</div>
-              <h2>AUCUNE CAMPAGNE ÉLIGIBLE</h2>
-              <p>Aucune campagne active ne correspond aux critères saisis pour le département <strong>{S.cp.substring(0,2)}</strong>.</p>
-              <span className="hint">Modifiez les critères ou vérifiez le CP</span>
-            </div>
-          ) : (
-            <div id="grid-screen" className="show">
-              <div className="col">
-                {left.map(c => <CampaignCard key={c.id} camp={c} status={c._st} S={S} />)}
+              {!hasCP ? (
+                <div id="init-screen">
+                  <div className="ic">📞</div>
+                  <h2>PROSPECT EN LIGNE ?</h2>
+                  <p>Saisissez le code postal du prospect pour filtrer les campagnes en temps réel.</p>
+                  <span className="hint">↑ TAPEZ LE CP CI-DESSUS</span>
+                </div>
+              ) : shown.length === 0 ? (
+                <div id="init-screen">
+                  <div className="ic">🔍</div>
+                  <h2>AUCUNE CAMPAGNE ÉLIGIBLE</h2>
+                  <p>Aucune campagne active ne correspond aux critères saisis pour le département <strong>{S.cp.substring(0,2)}</strong>.</p>
+                  <span className="hint">Modifiez les critères ou vérifiez le CP</span>
+                </div>
+              ) : (
+                <div id="grid-screen" className="show">
+                  {eli > 0 && (
+                    <div className="qualify-hint">
+                      Cliquez sur une campagne <span className="pill eligible" style={{fontSize:'10px'}}>✓ ÉLIGIBLE</span> pour la sélectionner et qualifier le prospect en lead.
+                    </div>
+                  )}
+                  <div className="col">
+                    {left.map(c => (
+                      <CampaignCard key={c.id} camp={c} status={c._st} S={S}
+                        selected={selectedCamps.has(c.id)}
+                        onSelect={toggleSelect} />
+                    ))}
+                  </div>
+                  <div className="col">
+                    {right.map(c => (
+                      <CampaignCard key={c.id} camp={c} status={c._st} S={S}
+                        selected={selectedCamps.has(c.id)}
+                        onSelect={toggleSelect} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {tab === 'histo' && (
+            <>
+              <div className="topbar">
+                <div>
+                  <div className="tp-path">WICALL / MES LEADS</div>
+                  <div className="tp-title">Historique des leads qualifiés</div>
+                </div>
+                <div className="tp-right">
+                  <div className="badge-ok">{myLeads.length} LEAD{myLeads.length !== 1 ? 'S' : ''}</div>
+                </div>
               </div>
-              <div className="col">
-                {right.map(c => <CampaignCard key={c.id} camp={c} status={c._st} S={S} />)}
+              <div className="mgr-body">
+                <div className="mgr-card">
+                  <HistoriqueTab myLeads={myLeads} />
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
+
+      {showLeadModal && (
+        <LeadModal
+          selectedCamps={selectedCamps}
+          allCamps={campaigns}
+          S={S}
+          onClose={() => setShowLeadModal(false)}
+          onSuccess={handleLeadSuccess}
+        />
+      )}
+
+      {toast && (
+        <div className="lead-toast">{toast}</div>
+      )}
     </div>
   );
 }

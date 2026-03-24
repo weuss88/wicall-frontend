@@ -8,6 +8,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [tab, setTab] = useState('camp');
   const [campaigns, setCampaigns] = useState([]);
   const [users, setUsers] = useState([]);
+  const [leads, setLeads] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editCampaign, setEditCampaign] = useState(null);
   const [userDlg, setUserDlg] = useState(null);
@@ -32,11 +33,21 @@ export default function ManagerPage({ me, onLogout }) {
     }
   }, []);
 
+  const loadLeads = useCallback(async () => {
+    try {
+      const data = await apiCall('GET', '/leads/');
+      setLeads(data);
+    } catch (e) {
+      alert('Erreur chargement leads: ' + e.message);
+    }
+  }, []);
+
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
 
   const handleTabChange = (newTab) => {
     setTab(newTab);
     if (newTab === 'cons') loadUsers();
+    if (newTab === 'leads') loadLeads();
   };
 
   const handleSaveCampaign = async (data, id) => {
@@ -110,6 +121,7 @@ export default function ManagerPage({ me, onLogout }) {
   const act = campaigns.filter(c => c.actif).length;
   const cli = new Set(campaigns.map(c => c.client.split('—')[0].trim())).size;
   const sec = new Set(campaigns.map(c => c.tag)).size;
+  const totalLeads = leads.length;
 
   const q = search.trim().toLowerCase();
   const filteredCampaigns = q
@@ -135,6 +147,10 @@ export default function ManagerPage({ me, onLogout }) {
           </div>
           <div className={`sb-row ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>
             <div className="sb-dot"></div>Conseillers
+          </div>
+          <div className={`sb-row ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>
+            <div className="sb-dot"></div>Leads
+            {totalLeads > 0 && <span className="sb-tag">{totalLeads}</span>}
           </div>
           <div className="sb-sec">Stats live</div>
           <div className="sb-row"><div className="sb-dot"></div>Total<span className="sb-tag">{tot}</span></div>
@@ -168,6 +184,7 @@ export default function ManagerPage({ me, onLogout }) {
         <div className="mob-tabs">
           <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>
           <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>
+          <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>
         </div>
 
         {/* Main */}
@@ -175,7 +192,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="topbar">
             <div>
               <div className="tp-path">WICALL / MANAGER</div>
-              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : 'Gestion Conseillers'}</div>
+              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : 'Leads Qualifiés'}</div>
             </div>
             {tab === 'camp' && (
               <div className="tp-right">
@@ -318,6 +335,74 @@ export default function ManagerPage({ me, onLogout }) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+          {/* Tab Leads */}
+          {tab === 'leads' && (
+            <div className="mgr-body">
+              <div className="stats-row">
+                <div className="stat-card">
+                  <div className="stat-ico">⭐</div>
+                  <div><div className="stat-val">{totalLeads}</div><div className="stat-lbl">Total leads</div></div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-ico">👥</div>
+                  <div><div className="stat-val">{new Set(leads.map(l => l.conseiller_id)).size}</div><div className="stat-lbl">Conseillers actifs</div></div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-ico">📋</div>
+                  <div><div className="stat-val">{new Set(leads.map(l => l.campaign_id)).size}</div><div className="stat-lbl">Campagnes touchées</div></div>
+                </div>
+              </div>
+              <div className="mgr-card">
+                <div className="mgr-head">
+                  <div className="mgr-head-title">TOUS LES LEADS</div>
+                  <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadLeads}>↺ Actualiser</button>
+                </div>
+                {leads.length === 0 ? (
+                  <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
+                    <div style={{fontSize:'32px',marginBottom:'12px'}}>⭐</div>
+                    <div style={{fontSize:'13px'}}>Aucun lead qualifié pour l'instant</div>
+                  </div>
+                ) : (
+                  <div style={{overflowX:'auto'}}>
+                    <table className="tbl">
+                      <thead><tr>
+                        <th>Date</th><th>Conseiller</th><th>Campagne</th><th>Prospect</th><th>Tél.</th><th>CP</th><th>Commentaire</th>
+                      </tr></thead>
+                      <tbody>
+                        {leads.map(l => {
+                          const col = TCOL[l.campaign_tag] || '#7ab8b5';
+                          const d = new Date(l.created_at);
+                          const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
+                            + ' ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+                          return (
+                            <tr key={l.id}>
+                              <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
+                              <td>
+                                <div className="t-name" style={{fontSize:'12px'}}>{l.conseiller_name}</div>
+                              </td>
+                              <td>
+                                <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                                  <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`,whiteSpace:'nowrap'}}>{l.campaign_tag}</span>
+                                  <div>
+                                    <div className="t-name" style={{fontSize:'12px'}}>{l.campaign_nom}</div>
+                                    <div className="t-client" style={{fontSize:'10px'}}>{l.campaign_client}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{fontSize:'12px'}}>{l.nom_prospect || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                              <td style={{fontSize:'12px',color:'var(--teal)'}}>{l.telephone || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                              <td style={{fontSize:'12px'}}>{l.cp || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                              <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'200px'}}>{l.commentaire || <span style={{color:'var(--muted)'}}>—</span>}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
