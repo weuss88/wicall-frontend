@@ -11,13 +11,14 @@ const ALL_PAGES = [
 ];
 function isFullAccess(me) {
   if (!me) return false;
-  // is_owner explicite, ou pages_access non défini (managers créés avant la feature)
-  return !!me.is_owner || me.pages_access == null;
+  return !!me.is_owner;
 }
 function hasPage(me, page) {
   if (!me) return false;
   if (isFullAccess(me)) return true;
-  return (me.pages_access || []).includes(page);
+  // pages_access null = accès par défaut sans billing ni gestion accès
+  const pages = me.pages_access ?? ['camp', 'cons', 'leads', 'stats'];
+  return pages.includes(page);
 }
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -973,7 +974,7 @@ export default function ManagerPage({ me, onLogout }) {
                       <table className="tbl">
                         <thead><tr>
                           <th>Campagne</th><th>Client</th><th>Tag</th>
-                          <th>Soumis</th><th>Validés</th><th>CPL</th><th>Taux éval.</th><th style={{color:'var(--green)'}}>CA calculé</th>
+                          <th>Soumis</th><th>Validés</th><th>CPL</th><th>Taux déval.</th><th style={{color:'var(--green)'}}>CA calculé</th>
                         </tr></thead>
                         <tbody>
                           {rows.map((r, i) => {

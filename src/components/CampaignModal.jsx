@@ -149,7 +149,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Tag + CPL + Taux éval */}
+          {/* Tag + CPL + Taux déval */}
           <div className="fr">
             <div className="fg2">
               <label>Type / Secteur</label>
@@ -163,7 +163,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
                 value={cpl} onChange={e => setCpl(e.target.value)} />
             </div>
             <div className="fg2">
-              <label>Taux de validation (%)</label>
+              <label>Taux de dévaluation (%)</label>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                 <input className="fi" type="number" min="0" max="100" placeholder="100"
                   value={tauxEval} onChange={e => setTauxEval(Math.min(100, Math.max(0, e.target.value)))}
