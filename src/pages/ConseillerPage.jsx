@@ -235,6 +235,13 @@ export default function ConseillerPage({ me, onLogout }) {
               <p>Saisissez le code postal du prospect pour filtrer les campagnes en temps réel.</p>
               <span className="hint">↑ TAPEZ LE CP CI-DESSUS</span>
             </div>
+          ) : shown.length === 0 ? (
+            <div id="init-screen">
+              <div className="ic">🔍</div>
+              <h2>AUCUNE CAMPAGNE ÉLIGIBLE</h2>
+              <p>Aucune campagne active ne correspond aux critères saisis pour le département <strong>{S.cp.substring(0,2)}</strong>.</p>
+              <span className="hint">Modifiez les critères ou vérifiez le CP</span>
+            </div>
           ) : (
             <div id="grid-screen" className="show">
               <div className="col">

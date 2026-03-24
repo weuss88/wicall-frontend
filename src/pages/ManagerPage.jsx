@@ -11,6 +11,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editCampaign, setEditCampaign] = useState(null);
   const [userDlg, setUserDlg] = useState(null);
+  const [search, setSearch] = useState('');
   // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, saving, error }
 
   const loadCampaigns = useCallback(async () => {
@@ -100,6 +101,15 @@ export default function ManagerPage({ me, onLogout }) {
   const cli = new Set(campaigns.map(c => c.client.split('—')[0].trim())).size;
   const sec = new Set(campaigns.map(c => c.tag)).size;
 
+  const q = search.trim().toLowerCase();
+  const filteredCampaigns = q
+    ? campaigns.filter(c =>
+        c.nom.toLowerCase().includes(q) ||
+        c.client.toLowerCase().includes(q) ||
+        c.tag.toLowerCase().includes(q)
+      )
+    : campaigns;
+
   return (
     <div className="page">
       <div className="shell">
@@ -153,6 +163,20 @@ export default function ManagerPage({ me, onLogout }) {
             </div>
             {tab === 'camp' && (
               <div className="tp-right">
+                <div className="ibox" style={{marginRight:'8px'}}>
+                  <span className="ilbl">🔍</span>
+                  <input
+                    className="iin"
+                    type="text"
+                    placeholder="Rechercher..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{width:'160px'}}
+                  />
+                  {search && (
+                    <button onClick={() => setSearch('')} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',padding:'0 4px',fontSize:'12px'}}>✕</button>
+                  )}
+                </div>
                 <button className="btn-add" onClick={() => { setEditCampaign(null); setModalOpen(true); }}>
                   + NOUVELLE CAMPAGNE
                 </button>
@@ -183,7 +207,9 @@ export default function ManagerPage({ me, onLogout }) {
               </div>
               <div className="mgr-card">
                 <div className="mgr-head">
-                  <div className="mgr-head-title">TOUTES LES CAMPAGNES</div>
+                  <div className="mgr-head-title">
+                    {q ? `${filteredCampaigns.length} résultat${filteredCampaigns.length !== 1 ? 's' : ''} pour "${search}"` : 'TOUTES LES CAMPAGNES'}
+                  </div>
                 </div>
                 <div style={{overflowX:'auto'}}>
                   <table className="tbl">
@@ -192,7 +218,12 @@ export default function ManagerPage({ me, onLogout }) {
                       <th>Âge</th><th>CP</th><th>Critères custom</th><th>Statut</th><th>Actions</th>
                     </tr></thead>
                     <tbody>
-                      {campaigns.map(c => {
+                      {filteredCampaigns.length === 0 && (
+                        <tr><td colSpan="8" style={{textAlign:'center',padding:'40px',color:'var(--muted)',fontSize:'13px'}}>
+                          {q ? `Aucune campagne ne correspond à "${search}"` : 'Aucune campagne pour l\'instant'}
+                        </td></tr>
+                      )}
+                      {filteredCampaigns.map(c => {
                         const col = TCOL[c.tag] || '#7ab8b5';
                         const cpTxt = c.cp === 'national' ? '🌍 National' : `${Array.isArray(c.cp) ? c.cp.length : 0} depts`;
                         const ageTxt = (c.age_min !== null || c.age_max !== null)
