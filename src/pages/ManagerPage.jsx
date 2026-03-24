@@ -9,11 +9,13 @@ const ALL_PAGES = [
   { key: 'stats',   label: 'Stats CA' },
   { key: 'billing', label: 'Facturation' },
 ];
+function isFullAccess(me) {
+  if (!me) return false;
+  return me.is_owner || me.pages_access == null;
+}
 function hasPage(me, page) {
   if (!me) return false;
-  if (me.is_owner) return true;
-  // Manager sans pages_access définies → accès complet (rétro-compat)
-  if (!me.pages_access || me.pages_access.length === 0) return true;
+  if (isFullAccess(me)) return true;
   return me.pages_access.includes(page);
 }
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
@@ -454,13 +456,13 @@ export default function ManagerPage({ me, onLogout }) {
     setUserDlg(d => ({ ...d, saving: true, error: '' }));
     try {
       if (mode === 'add') {
-        const regBody = { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: me?.is_owner ? userDlg.newRole : 'conseiller' };
-        if (me?.is_owner && userDlg.newRole === 'manager') regBody.pages_access = userDlg.pagesAccess;
+        const regBody = { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: isFullAccess(me) ? userDlg.newRole : 'conseiller' };
+        if (isFullAccess(me) && userDlg.newRole === 'manager') regBody.pages_access = userDlg.pagesAccess;
         await apiCall('POST', '/auth/register', regBody);
       } else {
         const body = { full_name: fullName.trim() };
         if (password.trim()) body.password = password.trim();
-        if (me?.is_owner) { body.role = userDlg.newRole; if (userDlg.newRole === 'manager') body.pages_access = userDlg.pagesAccess; }
+        if (isFullAccess(me)) { body.role = userDlg.newRole; if (userDlg.newRole === 'manager') body.pages_access = userDlg.pagesAccess; }
         await apiCall('PUT', '/users/' + user.id, body);
       }
       closeUserDlg();
@@ -517,7 +519,7 @@ export default function ManagerPage({ me, onLogout }) {
               <div className="sb-dot"></div>Facturation
             </div>
           )}
-          {me?.is_owner && (
+          {isFullAccess(me) && (
             <div className={`sb-row ${tab==='acces'?'on':''}`} onClick={() => handleTabChange('acces')}>
               <div className="sb-dot"></div>Gestion accès
               <span style={{fontSize:'8px',marginLeft:'4px',color:'var(--teal)',opacity:.6,fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>🔑</span>
@@ -529,7 +531,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="sb-foot">
             <div className="sb-user">
               <div className="sb-av" style={{color:'var(--teal)'}}>{(me?.full_name||me?.name||'M').split(' ').map(x => x[0]).join('').toUpperCase().slice(0,2)}</div>
-              <div><div className="sb-uname">{me?.full_name||me?.name||'Manager'}</div><div className="sb-urole">{me?.is_owner ? 'Propriétaire' : 'Manager'}</div></div>
+              <div><div className="sb-uname">{me?.full_name||me?.name||'Manager'}</div><div className="sb-urole">{isFullAccess(me) ? 'Propriétaire' : 'Manager'}</div></div>
             </div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCONNEXION</button>
           </div>
@@ -558,7 +560,7 @@ export default function ManagerPage({ me, onLogout }) {
           {hasPage(me,'leads') && <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>}
           {hasPage(me,'stats') && <button className={`mob-tab ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>📊 Stats CA</button>}
           {hasPage(me,'billing') && <button className={`mob-tab ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>💶 Facturation</button>}
-          {me?.is_owner && <button className={`mob-tab ${tab==='acces'?'on':''}`} onClick={() => handleTabChange('acces')}>🔑 Accès</button>}
+          {isFullAccess(me) && <button className={`mob-tab ${tab==='acces'?'on':''}`} onClick={() => handleTabChange('acces')}>🔑 Accès</button>}
         </div>
 
         {/* Main */}
@@ -843,7 +845,7 @@ export default function ManagerPage({ me, onLogout }) {
           )}
 
           {/* Tab Gestion des accès — owner uniquement */}
-          {tab === 'acces' && me?.is_owner && (
+          {tab === 'acces' && isFullAccess(me) && (
             <div className="mgr-body">
               <div className="mgr-card">
                 <div className="mgr-head">
@@ -1052,7 +1054,7 @@ export default function ManagerPage({ me, onLogout }) {
                     onKeyDown={e => e.key === 'Enter' && handleSaveUser()} />
                 </div>
               </div>
-              {me?.is_owner && (
+              {isFullAccess(me) && (
                 <div className="fr full">
                   <div className="fg2">
                     <label>Rôle</label>
@@ -1064,7 +1066,7 @@ export default function ManagerPage({ me, onLogout }) {
                   </div>
                 </div>
               )}
-              {me?.is_owner && userDlg.newRole === 'manager' && (
+              {isFullAccess(me) && userDlg.newRole === 'manager' && (
                 <div className="fg2 full">
                   <label>Pages accessibles</label>
                   <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginTop:'6px'}}>
