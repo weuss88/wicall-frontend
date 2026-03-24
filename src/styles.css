@@ -40,6 +40,7 @@ body::before{
 
 /* MOB-BAR — hidden on desktop */
 .mob-bar{display:none;}
+.mob-tabs{display:none;}
 
 /* LOGIN */
 .login-wrap{width:100%;max-width:380px;}
@@ -466,6 +467,20 @@ select.fi option{background:var(--panel);}
     background:linear-gradient(90deg,var(--panel),var(--bg2));
     flex-shrink:0;
   }
+  .mob-bar .btn-logout{
+    width:auto;padding:5px 12px;font-size:10px;letter-spacing:.5px;
+    color:var(--text2);border-color:var(--bord2);
+  }
+  .mob-tabs{
+    display:flex;border-bottom:1px solid var(--border);
+    background:var(--panel);flex-shrink:0;
+  }
+  .mob-tab{
+    flex:1;padding:9px 8px;background:none;border:none;border-bottom:2px solid transparent;
+    color:var(--muted2);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
+    cursor:pointer;letter-spacing:.5px;transition:all .15s;
+  }
+  .mob-tab.on{color:var(--teal);border-bottom-color:var(--teal);}
   .mob-bar-left{display:flex;align-items:center;gap:10px;}
   .mob-bar-mark{
     width:30px;height:30px;border-radius:8px;flex-shrink:0;

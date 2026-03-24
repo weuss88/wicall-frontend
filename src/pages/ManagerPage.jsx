@@ -150,8 +150,14 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="mob-bar-user">
             <div className="mob-bar-av" style={{color:'var(--teal)'}}>{me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'M'}</div>
             <div className="mob-bar-uname">{me?.name || 'Manager'}</div>
-            <button className="btn-logout" style={{width:'auto',padding:'5px 10px',fontSize:'10px'}} onClick={onLogout}>↩</button>
+            <button className="btn-logout" onClick={onLogout}>↩ DÉCO</button>
           </div>
+        </div>
+
+        {/* Mobile tabs (navigation onglets) */}
+        <div className="mob-tabs">
+          <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>
+          <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>
         </div>
 
         {/* Main */}

@@ -168,7 +168,7 @@ export default function ConseillerPage({ me, onLogout }) {
           <div className="mob-bar-user">
             <div className="mob-bar-av">{ini}</div>
             <div className="mob-bar-uname">{me?.name}</div>
-            <button className="btn-logout" style={{width:'auto',padding:'5px 10px',fontSize:'10px'}} onClick={onLogout}>↩</button>
+            <button className="btn-logout" onClick={onLogout}>↩ DÉCO</button>
           </div>
         </div>
 
