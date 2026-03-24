@@ -129,6 +129,22 @@ export default function ManagerPage({ onLogout }) {
           </div>
         </div>
 
+        {/* Mobile bar */}
+        <div className="mob-bar">
+          <div className="mob-bar-left">
+            <div className="mob-bar-mark">W</div>
+            <div>
+              <div className="mob-bar-brand">WICALL</div>
+              <div className="mob-bar-role">Manager</div>
+            </div>
+          </div>
+          <div className="mob-bar-user">
+            <div className="mob-bar-av" style={{color:'var(--teal)'}}>M</div>
+            <div className="mob-bar-uname">Manager</div>
+            <button className="btn-logout" style={{width:'auto',padding:'5px 10px',fontSize:'10px'}} onClick={onLogout}>↩</button>
+          </div>
+        </div>
+
         {/* Main */}
         <div className="main">
           <div className="topbar">

@@ -145,6 +145,21 @@ export default function ConseillerPage({ me, onLogout }) {
           </div>
         </div>
 
+        <div className="mob-bar">
+          <div className="mob-bar-left">
+            <div className="mob-bar-mark">W</div>
+            <div>
+              <div className="mob-bar-brand">WICALL</div>
+              <div className="mob-bar-role">Conseiller</div>
+            </div>
+          </div>
+          <div className="mob-bar-user">
+            <div className="mob-bar-av">{ini}</div>
+            <div className="mob-bar-uname">{me?.name}</div>
+            <button className="btn-logout" style={{width:'auto',padding:'5px 10px',fontSize:'10px'}} onClick={onLogout}>↩</button>
+          </div>
+        </div>
+
         <div className="main" style={{gridTemplateRows:'auto auto 1fr'}}>
           <div className="filters">
             <div className="ibox">
