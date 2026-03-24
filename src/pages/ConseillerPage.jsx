@@ -91,7 +91,7 @@ function CampaignCard({ camp, status, S }) {
 
 export default function ConseillerPage({ me, onLogout }) {
   const [campaigns, setCampaigns] = useState([]);
-  const [S, setS] = useState({ cp: '', logement: null, statut: null, chauffage: null, age: '' });
+  const [S, setS] = useState({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' });
   const [cpLabel, setCpLabel] = useState('');
 
   useEffect(() => {
@@ -108,7 +108,13 @@ export default function ConseillerPage({ me, onLogout }) {
   };
 
   const selFilter = (key, val) => setS(prev => ({ ...prev, [key]: prev[key] === val ? null : val }));
-  const reset = () => { setS({ cp: '', logement: null, statut: null, chauffage: null, age: '' }); setCpLabel(''); };
+  const reset = () => { setS({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' }); setCpLabel(''); };
+
+  const handleTel = (val) => {
+    const digits = val.replace(/\D/g, '').substring(0, 10);
+    const fmt = digits.replace(/(\d{2})(?=\d)/g, '$1 ');
+    setS(prev => ({ ...prev, telephone: fmt }));
+  };
 
   const hasCP = S.cp.length >= 2;
   const active = campaigns.filter(c => c.actif);
@@ -200,6 +206,11 @@ export default function ConseillerPage({ me, onLogout }) {
               <span className="ilbl">Âge</span>
               <input className="iin age-iin" type="number" min="18" max="99" placeholder="45"
                 value={S.age} onChange={e => setS(prev => ({ ...prev, age: e.target.value }))} />
+            </div>
+            <div className="ibox">
+              <span className="ilbl">Tél.</span>
+              <input className="iin tel-iin" type="tel" maxLength="14" placeholder="06 12 34 56 78"
+                inputMode="numeric" value={S.telephone} onChange={e => handleTel(e.target.value)} />
             </div>
           </div>
 
