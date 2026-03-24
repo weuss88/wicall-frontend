@@ -48,7 +48,7 @@ export default function LoginPage({ onLogin }) {
             {loading ? 'CONNEXION...' : 'CONNEXION'}
           </button>
         </div>
-        <div className="l-hint">manager1/manager123 · conseiller1/conseil123</div>
+        <div className="l-hint">Contactez votre administrateur pour vos accès.</div>
       </div>
     </div>
   );

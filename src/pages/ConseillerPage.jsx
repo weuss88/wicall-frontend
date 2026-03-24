@@ -91,7 +91,7 @@ function CampaignCard({ camp, status, S }) {
 
 export default function ConseillerPage({ me, onLogout }) {
   const [campaigns, setCampaigns] = useState([]);
-  const [S, setS] = useState({ cp: '', logement: null, statut: null, chauffage: null, age: '' });
+  const [S, setS] = useState({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' });
   const [cpLabel, setCpLabel] = useState('');
 
   useEffect(() => {
@@ -108,7 +108,13 @@ export default function ConseillerPage({ me, onLogout }) {
   };
 
   const selFilter = (key, val) => setS(prev => ({ ...prev, [key]: prev[key] === val ? null : val }));
-  const reset = () => { setS({ cp: '', logement: null, statut: null, chauffage: null, age: '' }); setCpLabel(''); };
+  const reset = () => { setS({ cp: '', logement: null, statut: null, chauffage: null, age: '', telephone: '' }); setCpLabel(''); };
+
+  const handleTel = (val) => {
+    const digits = val.replace(/\D/g, '').substring(0, 10);
+    const fmt = digits.replace(/(\d{2})(?=\d)/g, '$1 ');
+    setS(prev => ({ ...prev, telephone: fmt }));
+  };
 
   const hasCP = S.cp.length >= 2;
   const active = campaigns.filter(c => c.actif);
@@ -120,7 +126,11 @@ export default function ConseillerPage({ me, onLogout }) {
   const eli = shown.filter(c => c._st === 'eligible').length;
   const left = shown.filter((_, i) => i % 2 === 0);
   const right = shown.filter((_, i) => i % 2 === 1);
-  const byClient = name => active.filter(c => c.client.toLowerCase().startsWith(name.toLowerCase())).length;
+  const clientCounts = active.reduce((acc, c) => {
+    const key = c.client.split('—')[0].trim();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div className="page">
@@ -133,15 +143,32 @@ export default function ConseillerPage({ me, onLogout }) {
           <div className="sb-sec">Navigation</div>
           <div className="sb-row on"><div className="sb-dot"></div>Qualification</div>
           <div className="sb-sec">Clients actifs</div>
-          <div className="sb-row"><div className="sb-dot"></div>Yony<span className="sb-tag">{byClient('yony')}</span></div>
-          <div className="sb-row"><div className="sb-dot"></div>Léna<span className="sb-tag">{byClient('léna')}</span></div>
-          <div className="sb-row"><div className="sb-dot"></div>Cécile<span className="sb-tag">{byClient('cécile')}</span></div>
+          {Object.entries(clientCounts).map(([name, count]) => (
+            <div key={name} className="sb-row">
+              <div className="sb-dot"></div>{name}<span className="sb-tag">{count}</span>
+            </div>
+          ))}
           <div className="sb-foot">
             <div className="sb-user">
               <div className="sb-av">{ini}</div>
               <div><div className="sb-uname">{me?.name}</div><div className="sb-urole">Conseiller</div></div>
             </div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCONNEXION</button>
+          </div>
+        </div>
+
+        <div className="mob-bar">
+          <div className="mob-bar-left">
+            <div className="mob-bar-mark">W</div>
+            <div>
+              <div className="mob-bar-brand">WICALL</div>
+              <div className="mob-bar-role">Conseiller</div>
+            </div>
+          </div>
+          <div className="mob-bar-user">
+            <div className="mob-bar-av">{ini}</div>
+            <div className="mob-bar-uname">{me?.name}</div>
+            <button className="btn-logout" onClick={onLogout}>↩ DÉCO</button>
           </div>
         </div>
 
@@ -180,6 +207,11 @@ export default function ConseillerPage({ me, onLogout }) {
               <input className="iin age-iin" type="number" min="18" max="99" placeholder="45"
                 value={S.age} onChange={e => setS(prev => ({ ...prev, age: e.target.value }))} />
             </div>
+            <div className="ibox">
+              <span className="ilbl">Tél.</span>
+              <input className="iin tel-iin" type="tel" maxLength="14" placeholder="06 12 34 56 78"
+                inputMode="numeric" value={S.telephone} onChange={e => handleTel(e.target.value)} />
+            </div>
           </div>
 
           <div className="topbar">
@@ -202,6 +234,13 @@ export default function ConseillerPage({ me, onLogout }) {
               <h2>PROSPECT EN LIGNE ?</h2>
               <p>Saisissez le code postal du prospect pour filtrer les campagnes en temps réel.</p>
               <span className="hint">↑ TAPEZ LE CP CI-DESSUS</span>
+            </div>
+          ) : shown.length === 0 ? (
+            <div id="init-screen">
+              <div className="ic">🔍</div>
+              <h2>AUCUNE CAMPAGNE ÉLIGIBLE</h2>
+              <p>Aucune campagne active ne correspond aux critères saisis pour le département <strong>{S.cp.substring(0,2)}</strong>.</p>
+              <span className="hint">Modifiez les critères ou vérifiez le CP</span>
             </div>
           ) : (
             <div id="grid-screen" className="show">
