@@ -282,6 +282,16 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
 
 const D = v => v ? v : <span style={{color:'var(--muted)'}}>—</span>;
 
+const STATUT_CFG = {
+  valide:     { bg:'rgba(0,230,118,0.12)',   color:'var(--green)', border:'rgba(0,230,118,0.3)',   label:'✓ VALIDÉ' },
+  supprime:   { bg:'rgba(255,68,68,0.1)',    color:'var(--red)',   border:'rgba(255,68,68,0.25)',   label:'✕ SUPPRIMÉ' },
+  en_attente: { bg:'rgba(255,215,64,0.1)',   color:'#ffd740',      border:'rgba(255,215,64,0.25)', label:'⏳ EN ATTENTE' },
+};
+function StatutBadge({ statut }) {
+  const s = STATUT_CFG[statut] || STATUT_CFG.en_attente;
+  return <span style={{background:s.bg,color:s.color,border:`1px solid ${s.border}`,borderRadius:'8px',padding:'2px 9px',fontSize:'10px',fontWeight:700,whiteSpace:'nowrap',letterSpacing:'.3px'}}>{s.label}</span>;
+}
+
 function HistoriqueTab({ myLeads }) {
   if (myLeads.length === 0) {
     return (
@@ -295,7 +305,7 @@ function HistoriqueTab({ myLeads }) {
     <div style={{overflowX:'auto'}}>
       <table className="tbl">
         <thead><tr>
-          <th>Date</th><th>Campagne</th><th>Civ.</th><th>Nom</th><th>Prénom</th>
+          <th>Date</th><th>Statut</th><th>Campagne</th><th>Civ.</th><th>Nom</th><th>Prénom</th>
           <th>Adresse</th><th>CP</th><th>Ville</th><th>Tél.</th><th>Mail</th>
           <th>Rappel</th><th>Note</th>
         </tr></thead>
@@ -312,6 +322,7 @@ function HistoriqueTab({ myLeads }) {
             return (
               <tr key={l.id}>
                 <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
+                <td><StatutBadge statut={l.statut} /></td>
                 <td>
                   <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
                     <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{l.campaign_tag}</span>
@@ -480,17 +491,17 @@ export default function ConseillerPage({ me, onLogout }) {
                   {cpLabel && <span className="ilbl-nm">{cpLabel}</span>}
                 </div>
                 <div className="fg">
-                  <span className="fglbl">Logement</span>
-                  <div className="fgopts">
-                    <button className={`fb ${S.logement==='maison'?'on':''}`} onClick={() => selFilter('logement','maison')}>🏠 Maison</button>
-                    <button className={`fb ${S.logement==='appartement'?'on':''}`} onClick={() => selFilter('logement','appartement')}>🏢 Appart</button>
-                  </div>
-                </div>
-                <div className="fg">
                   <span className="fglbl">Statut</span>
                   <div className="fgopts">
                     <button className={`fb ${S.statut==='proprietaire'?'on':''}`} onClick={() => selFilter('statut','proprietaire')}>🔑 Proprio</button>
                     <button className={`fb ${S.statut==='locataire'?'on neg':''}`} onClick={() => selFilter('statut','locataire')}>📄 Loc.</button>
+                  </div>
+                </div>
+                <div className="fg">
+                  <span className="fglbl">Logement</span>
+                  <div className="fgopts">
+                    <button className={`fb ${S.logement==='maison'?'on':''}`} onClick={() => selFilter('logement','maison')}>🏠 Maison</button>
+                    <button className={`fb ${S.logement==='appartement'?'on':''}`} onClick={() => selFilter('logement','appartement')}>🏢 Appart</button>
                   </div>
                 </div>
                 <div className="fg">

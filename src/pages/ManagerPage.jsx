@@ -4,6 +4,184 @@ import CampaignModal from '../components/CampaignModal';
 
 const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 
+const STATUT_CFG = {
+  valide:     { bg:'rgba(0,230,118,0.12)',  color:'var(--green)', border:'rgba(0,230,118,0.3)',  label:'✓ VALIDÉ' },
+  supprime:   { bg:'rgba(255,68,68,0.1)',   color:'var(--red)',   border:'rgba(255,68,68,0.25)', label:'✕ SUPPRIMÉ' },
+  en_attente: { bg:'rgba(255,215,64,0.1)',  color:'#ffd740',      border:'rgba(255,215,64,0.25)',label:'⏳ EN ATTENTE' },
+};
+function StatutBadge({ statut }) {
+  const s = STATUT_CFG[statut] || STATUT_CFG.en_attente;
+  return <span style={{background:s.bg,color:s.color,border:`1px solid ${s.border}`,borderRadius:'8px',padding:'2px 9px',fontSize:'10px',fontWeight:700,whiteSpace:'nowrap',letterSpacing:'.3px'}}>{s.label}</span>;
+}
+
+function fmtTel(val) {
+  const digits = val.replace(/\D/g, '').substring(0, 11);
+  if (digits.startsWith('33') && digits.length >= 2) {
+    const parts = ['33'];
+    const rest = digits.substring(2);
+    if (rest.length > 0) parts.push(rest.substring(0, 1));
+    if (rest.length > 1) parts.push(rest.substring(1, 3));
+    if (rest.length > 3) parts.push(rest.substring(3, 5));
+    if (rest.length > 5) parts.push(rest.substring(5, 7));
+    if (rest.length > 7) parts.push(rest.substring(7, 9));
+    return parts.join(' ');
+  }
+  return digits.substring(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ');
+}
+
+function LeadEditModal({ lead, onSave, onClose }) {
+  const [form, setForm] = useState({
+    civilite: lead.civilite || '',
+    nom_prospect: lead.nom_prospect || '',
+    prenom: lead.prenom || '',
+    adresse: lead.adresse || '',
+    cp: lead.cp || '',
+    ville: lead.ville || '',
+    telephone: lead.telephone || '',
+    email: lead.email || '',
+    date_rappel: lead.date_rappel || '',
+    heure_rappel: lead.heure_rappel || '',
+    commentaire: lead.commentaire || '',
+    statut: lead.statut || 'en_attente',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(lead.id, {
+        civilite: form.civilite || null,
+        nom_prospect: form.nom_prospect.trim() || null,
+        prenom: form.prenom.trim() || null,
+        adresse: form.adresse.trim() || null,
+        cp: form.cp.trim() || null,
+        ville: form.ville.trim() || null,
+        telephone: form.telephone.trim() || null,
+        email: form.email.trim() || null,
+        date_rappel: form.date_rappel || null,
+        heure_rappel: form.heure_rappel || null,
+        commentaire: form.commentaire.trim() || null,
+        statut: form.statut,
+      });
+      onClose();
+    } catch (e) {
+      setError(e.message);
+      setSaving(false);
+    }
+  };
+
+  const col = TCOL[lead.campaign_tag] || '#7ab8b5';
+  return (
+    <div className="mo">
+      <div className="mo-box" style={{maxWidth:'560px'}}>
+        <div className="mo-head">
+          <div className="mo-title">MODIFIER LE LEAD</div>
+          <button className="mo-x" onClick={onClose}>✕</button>
+        </div>
+        <div className="mo-body">
+          <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 10px',background:'rgba(0,210,200,0.06)',border:'1px solid rgba(0,210,200,0.15)',borderRadius:'6px',marginBottom:'14px'}}>
+            <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{lead.campaign_tag}</span>
+            <span style={{fontSize:'12px',color:'var(--text)'}}>{lead.campaign_nom}</span>
+            <span style={{fontSize:'11px',color:'var(--muted)',marginLeft:'auto'}}>{lead.conseiller_name}</span>
+          </div>
+
+          {/* Statut */}
+          <div className="fg2" style={{marginBottom:'10px'}}>
+            <label>Statut du lead</label>
+            <select className="fi" value={form.statut} onChange={e => set('statut', e.target.value)}>
+              <option value="en_attente">⏳ En attente</option>
+              <option value="valide">✓ Validé</option>
+              <option value="supprime">✕ Supprimé</option>
+            </select>
+          </div>
+
+          {/* Civilité + Nom + Prénom */}
+          <div style={{display:'grid',gridTemplateColumns:'100px 1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>Civilité</label>
+              <select className="fi" value={form.civilite} onChange={e => set('civilite', e.target.value)}>
+                <option value="">—</option>
+                <option value="M.">M.</option>
+                <option value="Mme">Mme</option>
+              </select>
+            </div>
+            <div className="fg2">
+              <label>Nom</label>
+              <input className="fi" type="text" value={form.nom_prospect} onChange={e => set('nom_prospect', e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Prénom</label>
+              <input className="fi" type="text" value={form.prenom} onChange={e => set('prenom', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Adresse */}
+          <div className="fg2" style={{marginBottom:'10px'}}>
+            <label>Adresse</label>
+            <input className="fi" type="text" value={form.adresse} onChange={e => set('adresse', e.target.value)} />
+          </div>
+
+          {/* CP + Ville */}
+          <div style={{display:'grid',gridTemplateColumns:'120px 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>CP</label>
+              <input className="fi" type="text" maxLength="5" inputMode="numeric"
+                value={form.cp} onChange={e => set('cp', e.target.value.replace(/\D/g,'').substring(0,5))} />
+            </div>
+            <div className="fg2">
+              <label>Ville</label>
+              <input className="fi" type="text" value={form.ville} onChange={e => set('ville', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Téléphone + Mail */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>Téléphone</label>
+              <input className="fi" type="tel" maxLength="17"
+                value={form.telephone} onChange={e => set('telephone', fmtTel(e.target.value))} />
+            </div>
+            <div className="fg2">
+              <label>Mail</label>
+              <input className="fi" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Date + Heure rappel */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+            <div className="fg2">
+              <label>Date de rappel</label>
+              <input className="fi" type="date" value={form.date_rappel} onChange={e => set('date_rappel', e.target.value)} />
+            </div>
+            <div className="fg2">
+              <label>Heure de rappel</label>
+              <input className="fi" type="time" value={form.heure_rappel} onChange={e => set('heure_rappel', e.target.value)} />
+            </div>
+          </div>
+
+          {/* Note */}
+          <div className="fg2" style={{marginBottom:'10px'}}>
+            <label>Note</label>
+            <textarea className="fi" rows="3" value={form.commentaire} onChange={e => set('commentaire', e.target.value)}
+              style={{resize:'vertical',minHeight:'60px',fontFamily:'inherit'}} />
+          </div>
+
+          {error && <div style={{color:'var(--red)',fontSize:'12px',padding:'4px 0'}}>{error}</div>}
+        </div>
+        <div className="mo-foot">
+          <button className="btn-cancel" onClick={onClose} disabled={saving}>Annuler</button>
+          <button className="btn-save" onClick={handleSubmit} disabled={saving}>
+            {saving ? 'ENREGISTREMENT...' : '✓ ENREGISTRER'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ManagerPage({ me, onLogout }) {
   const [tab, setTab] = useState('camp');
   const [campaigns, setCampaigns] = useState([]);
@@ -12,6 +190,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editCampaign, setEditCampaign] = useState(null);
   const [userDlg, setUserDlg] = useState(null);
+  const [editLead, setEditLead] = useState(null);
   const [search, setSearch] = useState('');
   // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, saving, error }
 
@@ -41,6 +220,12 @@ export default function ManagerPage({ me, onLogout }) {
       alert('Erreur chargement leads: ' + e.message);
     }
   }, []);
+
+  const handleLeadUpdate = async (id, data) => {
+    const updated = await apiCall('PUT', '/leads/' + id, data);
+    setLeads(prev => prev.map(l => l.id === id ? updated : l));
+    return updated;
+  };
 
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
 
@@ -369,9 +554,9 @@ export default function ManagerPage({ me, onLogout }) {
                   <div style={{overflowX:'auto'}}>
                     <table className="tbl">
                       <thead><tr>
-                        <th>Date</th><th>Conseiller</th><th>Campagne</th><th>Civ.</th>
+                        <th>Date</th><th>Statut</th><th>Conseiller</th><th>Campagne</th><th>Civ.</th>
                         <th>Nom</th><th>Prénom</th><th>Adresse</th><th>CP</th><th>Ville</th>
-                        <th>Tél.</th><th>Mail</th><th>Rappel</th><th>Note</th>
+                        <th>Tél.</th><th>Mail</th><th>Rappel</th><th>Note</th><th>Actions</th>
                       </tr></thead>
                       <tbody>
                         {leads.map(l => {
@@ -387,6 +572,7 @@ export default function ManagerPage({ me, onLogout }) {
                           return (
                             <tr key={l.id}>
                               <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
+                              <td><StatutBadge statut={l.statut} /></td>
                               <td>
                                 <div className="t-name" style={{fontSize:'12px'}}>{l.conseiller_name}</div>
                               </td>
@@ -409,6 +595,17 @@ export default function ManagerPage({ me, onLogout }) {
                               <td style={{fontSize:'11px',maxWidth:'140px'}}>{nd(l.email)}</td>
                               <td style={{fontSize:'11px',whiteSpace:'nowrap',color:'var(--text2)'}}>{nd(rappel)}</td>
                               <td style={{fontSize:'11px',color:'var(--text2)',maxWidth:'160px'}}>{nd(l.commentaire)}</td>
+                              <td style={{whiteSpace:'nowrap'}}>
+                                {l.statut !== 'valide' && (
+                                  <button className="btn-ed" style={{color:'var(--green)',borderColor:'rgba(0,230,118,0.3)',marginRight:'4px'}}
+                                    onClick={() => handleLeadUpdate(l.id, {statut:'valide'})}>✓</button>
+                                )}
+                                {l.statut !== 'supprime' && (
+                                  <button className="btn-dl" style={{marginRight:'4px'}}
+                                    onClick={() => handleLeadUpdate(l.id, {statut:'supprime'})}>✕</button>
+                                )}
+                                <button className="btn-ed" onClick={() => setEditLead(l)}>✏</button>
+                              </td>
                             </tr>
                           );
                         })}
@@ -477,6 +674,14 @@ export default function ManagerPage({ me, onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {editLead && (
+        <LeadEditModal
+          lead={editLead}
+          onSave={handleLeadUpdate}
+          onClose={() => setEditLead(null)}
+        />
       )}
     </div>
   );
