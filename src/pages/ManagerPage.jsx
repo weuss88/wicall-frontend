@@ -14,6 +14,7 @@ function hasPage(me, page) {
   if (me.is_owner) return true;
   return (me.pages_access || []).includes(page);
 }
+const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 function parseCPL(cpl) {
   if (!cpl) return 0;
