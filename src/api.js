@@ -1,10 +1,15 @@
-const API = 'https://wicall-backend-production.up.railway.app';
+const API = import.meta.env.VITE_API_URL;
 let _token = localStorage.getItem('wicall_token') || null;
+let _onUnauthorized = null;
 
 export function setToken(t) {
   _token = t;
   if (t) localStorage.setItem('wicall_token', t);
   else localStorage.removeItem('wicall_token');
+}
+
+export function onUnauthorized(cb) {
+  _onUnauthorized = cb;
 }
 
 export async function apiCall(method, path, body = null) {
@@ -17,6 +22,11 @@ export async function apiCall(method, path, body = null) {
   };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(API + path, opts);
+  if (r.status === 401) {
+    setToken(null);
+    if (_onUnauthorized) _onUnauthorized();
+    throw new Error('Session expirée, veuillez vous reconnecter.');
+  }
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
     throw new Error(e.detail || 'Erreur serveur');
