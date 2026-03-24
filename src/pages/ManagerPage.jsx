@@ -2,7 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiCall } from '../api';
 import CampaignModal from '../components/CampaignModal';
 
-const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
+const ALL_PAGES = [
+  { key: 'camp',    label: 'Campagnes' },
+  { key: 'cons',    label: 'Conseillers' },
+  { key: 'leads',   label: 'Leads' },
+  { key: 'stats',   label: 'Stats CA' },
+  { key: 'billing', label: 'Facturation' },
+];
+function hasPage(me, page) {
+  if (!me) return false;
+  if (me.is_owner) return true;
+  return (me.pages_access || []).includes(page);
+}
 const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 function parseCPL(cpl) {
   if (!cpl) return 0;
@@ -327,8 +338,7 @@ function ManagerCATab({ leads, campaigns }) {
 
 export default function ManagerPage({ me, onLogout }) {
   const now = new Date();
-  const isSuperAdmin = me?.role === 'super_admin';
-  const canBilling = isSuperAdmin || me?.billing_access;
+  const canBilling = hasPage(me, 'billing');
 
   const [tab, setTab] = useState('camp');
   const [campaigns, setCampaigns] = useState([]);
@@ -343,7 +353,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [billingYear, setBillingYear] = useState(now.getFullYear());
   const [filterLeadCons, setFilterLeadCons] = useState('');
   const [filterLeadCamp, setFilterLeadCamp] = useState('');
-  // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, newRole, billingAccess, saving, error }
+  // userDlg: null | { mode:'add'|'edit', user, username, fullName, password, newRole, pagesAccess, saving, error }
 
   const loadCampaigns = useCallback(async () => {
     try {
@@ -382,9 +392,8 @@ export default function ManagerPage({ me, onLogout }) {
 
   const handleTabChange = (newTab) => {
     setTab(newTab);
-    if (newTab === 'cons') loadUsers();
+    if (newTab === 'cons' || newTab === 'acces' || newTab === 'billing') loadUsers();
     if (newTab === 'leads' || newTab === 'billing' || newTab === 'stats') loadLeads();
-    if (newTab === 'billing') loadUsers();
   };
 
   const handleSaveCampaign = async (data, id) => {
@@ -419,8 +428,9 @@ export default function ManagerPage({ me, onLogout }) {
     }
   };
 
-  const openAddUser = () => setUserDlg({ mode: 'add', user: null, username: '', fullName: '', password: '', newRole: 'conseiller', billingAccess: false, saving: false, error: '' });
-  const openEditUser = (user) => setUserDlg({ mode: 'edit', user, username: user.username, fullName: user.full_name || '', password: '', newRole: user.role || 'conseiller', billingAccess: !!user.billing_access, saving: false, error: '' });
+  const defaultPages = (role) => role === 'manager' ? ['camp', 'cons', 'leads', 'stats'] : [];
+  const openAddUser = () => setUserDlg({ mode: 'add', user: null, username: '', fullName: '', password: '', newRole: 'conseiller', pagesAccess: defaultPages('conseiller'), saving: false, error: '' });
+  const openEditUser = (user) => setUserDlg({ mode: 'edit', user, username: user.username, fullName: user.full_name || '', password: '', newRole: user.role || 'conseiller', pagesAccess: user.pages_access || defaultPages(user.role), saving: false, error: '' });
   const closeUserDlg = () => setUserDlg(null);
 
   const handleDeleteUser = async (user) => {
@@ -441,13 +451,13 @@ export default function ManagerPage({ me, onLogout }) {
     setUserDlg(d => ({ ...d, saving: true, error: '' }));
     try {
       if (mode === 'add') {
-        const regBody = { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: canBilling ? userDlg.newRole : 'conseiller' };
-        if (canBilling && userDlg.newRole === 'manager') regBody.billing_access = userDlg.billingAccess;
+        const regBody = { username: username.trim(), full_name: fullName.trim(), password: password.trim(), role: me?.is_owner ? userDlg.newRole : 'conseiller' };
+        if (me?.is_owner && userDlg.newRole === 'manager') regBody.pages_access = userDlg.pagesAccess;
         await apiCall('POST', '/auth/register', regBody);
       } else {
         const body = { full_name: fullName.trim() };
         if (password.trim()) body.password = password.trim();
-        if (canBilling) { body.role = userDlg.newRole; if (userDlg.newRole === 'manager') body.billing_access = userDlg.billingAccess; }
+        if (me?.is_owner) { body.role = userDlg.newRole; if (userDlg.newRole === 'manager') body.pages_access = userDlg.pagesAccess; }
         await apiCall('PUT', '/users/' + user.id, body);
       }
       closeUserDlg();
@@ -490,23 +500,24 @@ export default function ManagerPage({ me, onLogout }) {
             <div><div className="sb-brand">WICALL</div><div className="sb-sub">Manager</div></div>
           </div>
           <div className="sb-sec">Navigation</div>
-          <div className={`sb-row ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>
-            <div className="sb-dot"></div>Campagnes
-          </div>
-          <div className={`sb-row ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>
-            <div className="sb-dot"></div>Conseillers
-          </div>
-          <div className={`sb-row ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>
-            <div className="sb-dot"></div>Leads
-            {totalLeads > 0 && <span className="sb-tag">{totalLeads}</span>}
-          </div>
-          <div className={`sb-row ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>
-            <div className="sb-dot"></div>Stats CA
-          </div>
-          {canBilling && (
+          {hasPage(me,'camp') && <div className={`sb-row ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}><div className="sb-dot"></div>Campagnes</div>}
+          {hasPage(me,'cons') && <div className={`sb-row ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}><div className="sb-dot"></div>Conseillers</div>}
+          {hasPage(me,'leads') && (
+            <div className={`sb-row ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>
+              <div className="sb-dot"></div>Leads
+              {totalLeads > 0 && <span className="sb-tag">{totalLeads}</span>}
+            </div>
+          )}
+          {hasPage(me,'stats') && <div className={`sb-row ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}><div className="sb-dot"></div>Stats CA</div>}
+          {hasPage(me,'billing') && (
             <div className={`sb-row ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>
               <div className="sb-dot"></div>Facturation
-              <span style={{fontSize:'8px',marginLeft:'4px',color:'var(--teal)',opacity:.6,fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>🔒</span>
+            </div>
+          )}
+          {me?.is_owner && (
+            <div className={`sb-row ${tab==='acces'?'on':''}`} onClick={() => handleTabChange('acces')}>
+              <div className="sb-dot"></div>Gestion accès
+              <span style={{fontSize:'8px',marginLeft:'4px',color:'var(--teal)',opacity:.6,fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>🔑</span>
             </div>
           )}
           <div className="sb-sec">Stats live</div>
@@ -514,8 +525,8 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="sb-row"><div className="sb-dot"></div>Actives<span className="sb-tag">{act}</span></div>
           <div className="sb-foot">
             <div className="sb-user">
-              <div className="sb-av" style={{color:'var(--teal)'}}>{me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'M'}</div>
-              <div><div className="sb-uname">{me?.name || 'Manager'}</div><div className="sb-urole">Administrateur</div></div>
+              <div className="sb-av" style={{color:'var(--teal)'}}>{(me?.full_name||me?.name||'M').split(' ').map(x => x[0]).join('').toUpperCase().slice(0,2)}</div>
+              <div><div className="sb-uname">{me?.full_name||me?.name||'Manager'}</div><div className="sb-urole">{me?.is_owner ? 'Propriétaire' : 'Manager'}</div></div>
             </div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCONNEXION</button>
           </div>
@@ -539,11 +550,12 @@ export default function ManagerPage({ me, onLogout }) {
 
         {/* Mobile tabs (navigation onglets) */}
         <div className="mob-tabs">
-          <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>
-          <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>
-          <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>
-          <button className={`mob-tab ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>📊 Stats CA</button>
-          {canBilling && <button className={`mob-tab ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>💶 Facturation</button>}
+          {hasPage(me,'camp') && <button className={`mob-tab ${tab==='camp'?'on':''}`} onClick={() => handleTabChange('camp')}>📋 Campagnes</button>}
+          {hasPage(me,'cons') && <button className={`mob-tab ${tab==='cons'?'on':''}`} onClick={() => handleTabChange('cons')}>👥 Conseillers</button>}
+          {hasPage(me,'leads') && <button className={`mob-tab ${tab==='leads'?'on':''}`} onClick={() => handleTabChange('leads')}>⭐ Leads</button>}
+          {hasPage(me,'stats') && <button className={`mob-tab ${tab==='stats'?'on':''}`} onClick={() => handleTabChange('stats')}>📊 Stats CA</button>}
+          {hasPage(me,'billing') && <button className={`mob-tab ${tab==='billing'?'on':''}`} onClick={() => handleTabChange('billing')}>💶 Facturation</button>}
+          {me?.is_owner && <button className={`mob-tab ${tab==='acces'?'on':''}`} onClick={() => handleTabChange('acces')}>🔑 Accès</button>}
         </div>
 
         {/* Main */}
@@ -551,7 +563,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="topbar">
             <div>
               <div className="tp-path">WICALL / MANAGER</div>
-              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : tab==='billing' ? 'Facturation' : tab==='stats' ? 'Stats CA' : 'Leads Qualifiés'}</div>
+              <div className="tp-title">{tab==='camp' ? 'Gestion Campagnes' : tab==='cons' ? 'Gestion Conseillers' : tab==='billing' ? 'Facturation' : tab==='stats' ? 'Stats CA' : tab==='acces' ? 'Gestion des accès' : 'Leads Qualifiés'}</div>
             </div>
             {tab === 'camp' && (
               <div className="tp-right">
@@ -827,7 +839,61 @@ export default function ManagerPage({ me, onLogout }) {
             </>
           )}
 
-          {/* Tab Facturation — super_admin uniquement */}
+          {/* Tab Gestion des accès — owner uniquement */}
+          {tab === 'acces' && me?.is_owner && (
+            <div className="mgr-body">
+              <div className="mgr-card">
+                <div className="mgr-head">
+                  <div className="mgr-head-title">🔑 GESTION DES ACCÈS MANAGERS</div>
+                  <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadUsers}>↺</button>
+                </div>
+                <p style={{padding:'0 16px 12px',color:'var(--muted)',fontSize:'12px',margin:0}}>
+                  Cochez les pages auxquelles chaque manager a accès. Les modifications sont appliquées immédiatement.
+                </p>
+                {users.filter(u => u.role === 'manager' && !u.is_owner).length === 0 ? (
+                  <div style={{padding:'30px',textAlign:'center',color:'var(--muted)',fontSize:'13px'}}>Aucun autre manager pour l'instant</div>
+                ) : (
+                  <div style={{overflowX:'auto'}}>
+                    <table className="tbl">
+                      <thead><tr>
+                        <th>Manager</th><th>Identifiant</th>
+                        {ALL_PAGES.map(p => <th key={p.key} style={{textAlign:'center',fontSize:'11px'}}>{p.label}</th>)}
+                      </tr></thead>
+                      <tbody>
+                        {users.filter(u => u.role === 'manager' && !u.is_owner).map(u => {
+                          const pages = u.pages_access || ['camp', 'cons', 'leads', 'stats'];
+                          return (
+                            <tr key={u.id}>
+                              <td><div className="t-name">{u.full_name || u.username}</div></td>
+                              <td style={{color:'var(--muted2)',fontSize:'11px'}}>{u.username}</td>
+                              {ALL_PAGES.map(p => (
+                                <td key={p.key} style={{textAlign:'center'}}>
+                                  <input type="checkbox"
+                                    checked={pages.includes(p.key)}
+                                    style={{accentColor:'var(--teal)',width:'15px',height:'15px',cursor:'pointer'}}
+                                    onChange={async (e) => {
+                                      const newPages = e.target.checked
+                                        ? [...pages, p.key]
+                                        : pages.filter(x => x !== p.key);
+                                      try {
+                                        await apiCall('PUT', '/users/' + u.id, { pages_access: newPages });
+                                        setUsers(prev => prev.map(x => x.id === u.id ? { ...x, pages_access: newPages } : x));
+                                      } catch (err) { alert('Erreur: ' + err.message); }
+                                    }} />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab Facturation */}
           {tab === 'billing' && canBilling && (() => {
             const bLeads = leads.filter(l => {
               const d = new Date(l.created_at);
@@ -934,49 +1000,6 @@ export default function ManagerPage({ me, onLogout }) {
                   )}
                 </div>
 
-              {/* Gestion des accès facturation */}
-              <div className="mgr-card" style={{marginTop:'16px'}}>
-                <div className="mgr-head">
-                  <div className="mgr-head-title">🔒 ACCÈS FACTURATION</div>
-                  <button className="btn-add" style={{background:'none',border:'1px solid rgba(0,210,200,0.3)',color:'var(--teal)'}} onClick={loadUsers}>↺</button>
-                </div>
-                {users.filter(u => u.role === 'manager' || u.role === 'super_admin').length === 0 ? (
-                  <div style={{padding:'20px',color:'var(--muted)',fontSize:'12px'}}>Aucun manager trouvé</div>
-                ) : (
-                  <table className="tbl">
-                    <thead><tr>
-                      <th>Manager</th><th>Identifiant</th><th>Rôle</th><th style={{textAlign:'center'}}>Accès facturation</th>
-                    </tr></thead>
-                    <tbody>
-                      {users.filter(u => u.role === 'manager' || u.role === 'super_admin').map(u => (
-                        <tr key={u.id}>
-                          <td><div className="t-name">{u.full_name || u.username}</div></td>
-                          <td style={{color:'var(--muted2)',fontSize:'11px'}}>{u.username}</td>
-                          <td>
-                            <span style={{fontSize:'10px',color: u.role==='super_admin'?'var(--teal)':'var(--text2)',fontFamily:'Rajdhani,sans-serif',letterSpacing:'.5px'}}>
-                              {u.role === 'super_admin' ? '🔑 SUPER ADMIN' : 'MANAGER'}
-                            </span>
-                          </td>
-                          <td style={{textAlign:'center'}}>
-                            <label className="tog">
-                              <input type="checkbox" checked={!!u.billing_access || u.role === 'super_admin'}
-                                disabled={u.role === 'super_admin'}
-                                onChange={async () => {
-                                  try {
-                                    await apiCall('PUT', '/users/' + u.id, { billing_access: !u.billing_access });
-                                    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, billing_access: !x.billing_access } : x));
-                                  } catch (e) { alert('Erreur: ' + e.message); }
-                                }} />
-                              <div className="tog-track"></div>
-                              <div className="tog-thumb"></div>
-                            </label>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
             </div>
             );
           })()}
@@ -1026,26 +1049,35 @@ export default function ManagerPage({ me, onLogout }) {
                     onKeyDown={e => e.key === 'Enter' && handleSaveUser()} />
                 </div>
               </div>
-              {canBilling && (
+              {me?.is_owner && (
                 <div className="fr full">
                   <div className="fg2">
                     <label>Rôle</label>
-                    <select className="fi" value={userDlg.newRole} onChange={e => setUserDlg(d => ({ ...d, newRole: e.target.value }))}>
+                    <select className="fi" value={userDlg.newRole}
+                      onChange={e => setUserDlg(d => ({ ...d, newRole: e.target.value, pagesAccess: defaultPages(e.target.value) }))}>
                       <option value="conseiller">Conseiller</option>
                       <option value="manager">Manager</option>
                     </select>
                   </div>
-                  {userDlg.newRole === 'manager' && (
-                    <div className="fg2" style={{display:'flex',alignItems:'center',gap:'10px',paddingTop:'24px'}}>
-                      <label className="tog">
-                        <input type="checkbox" checked={userDlg.billingAccess}
-                          onChange={e => setUserDlg(d => ({ ...d, billingAccess: e.target.checked }))} />
-                        <div className="tog-track"></div>
-                        <div className="tog-thumb"></div>
+                </div>
+              )}
+              {me?.is_owner && userDlg.newRole === 'manager' && (
+                <div className="fg2 full">
+                  <label>Pages accessibles</label>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginTop:'6px'}}>
+                    {ALL_PAGES.map(p => (
+                      <label key={p.key} style={{display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',cursor:'pointer',color:'var(--text2)'}}>
+                        <input type="checkbox"
+                          style={{accentColor:'var(--teal)'}}
+                          checked={(userDlg.pagesAccess||[]).includes(p.key)}
+                          onChange={e => {
+                            const cur = userDlg.pagesAccess || [];
+                            setUserDlg(d => ({ ...d, pagesAccess: e.target.checked ? [...cur, p.key] : cur.filter(x => x !== p.key) }));
+                          }} />
+                        {p.label}
                       </label>
-                      <span style={{fontSize:'11px',color:'var(--text2)'}}>Accès facturation 🔒</span>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               )}
               {userDlg.error && (
