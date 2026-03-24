@@ -57,13 +57,6 @@ function CampaignCard({ camp, status, S, selected, onSelect }) {
       onClick={isEligible ? () => onSelect(camp.id) : undefined}
       style={isEligible ? { cursor: 'pointer' } : {}}
     >
-      {isEligible && (
-        <div className="cc-check">
-          <div className={`cc-checkbox ${selected ? 'checked' : ''}`}>
-            {selected && <span>✓</span>}
-          </div>
-        </div>
-      )}
       <div className="ct">
         <div className="ct-l">
           <div className="cn">
@@ -72,7 +65,14 @@ function CampaignCard({ camp, status, S, selected, onSelect }) {
           </div>
           <div className="ck">👤 {camp.client}</div>
         </div>
-        {pills[status] && <span className={`pill ${status}`}>{pills[status]}</span>}
+        <div style={{display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
+          {pills[status] && <span className={`pill ${status}`}>{pills[status]}</span>}
+          {isEligible && (
+            <div className={`cc-checkbox ${selected ? 'checked' : ''}`}>
+              {selected && <span>✓</span>}
+            </div>
+          )}
+        </div>
       </div>
       {tags.length > 0 && (
         <div className="tags">
@@ -516,7 +516,14 @@ export default function ConseillerPage({ me, onLogout }) {
               <div className="topbar">
                 <div>
                   <div className="tp-path">WICALL / QUALIFICATION</div>
-                  <div className="tp-title">Filtrage Campagnes</div>
+                  <div style={{display:'flex',alignItems:'baseline',gap:'10px',flexWrap:'wrap'}}>
+                    <div className="tp-title">Filtrage Campagnes</div>
+                    {eli > 0 && selectedCamps.size === 0 && (
+                      <span style={{fontSize:'10px',color:'var(--muted)',whiteSpace:'nowrap'}}>
+                        · cliquer sur <span className="pill eligible" style={{fontSize:'9px',padding:'1px 7px'}}>✓ ÉLIGIBLE</span> pour sélectionner
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="tp-right">
                   {selectedCamps.size > 0 && (
@@ -548,11 +555,6 @@ export default function ConseillerPage({ me, onLogout }) {
                 </div>
               ) : (
                 <div id="grid-screen" className="show">
-                  {eli > 0 && (
-                    <div className="qualify-hint">
-                      Cliquez sur une campagne <span className="pill eligible" style={{fontSize:'10px'}}>✓ ÉLIGIBLE</span> pour la sélectionner et qualifier le prospect en lead.
-                    </div>
-                  )}
                   <div className="col">
                     {left.map(c => (
                       <CampaignCard key={c.id} camp={c} status={c._st} S={S}
