@@ -74,13 +74,26 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
     }
 
     // CP : si national ou champ vide → "national", sinon liste de depts
+    // Supporte : virgules, espaces, et tirets comme séparateur ou plage (ex: 14-27 = depts 14 à 27)
     let cp = 'national';
     if (!isNational && cpText.trim()) {
-      const depts = cpText.split(/[,\s]+/)
-        .map(x => x.trim())
-        .filter(x => x.length > 0)
-        .map(x => x.padStart(2, '0'))
-        .filter(x => x.length === 2 && !isNaN(Number(x)));
+      const deptSet = new Set();
+      cpText.split(/[,\s]+/).forEach(part => {
+        part = part.trim();
+        if (!part) return;
+        const rangeMatch = part.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (rangeMatch) {
+          const from = parseInt(rangeMatch[1]);
+          const to = parseInt(rangeMatch[2]);
+          if (from <= to && to <= 99) {
+            for (let i = from; i <= to; i++) deptSet.add(String(i).padStart(2, '0'));
+          }
+        } else {
+          const d = part.padStart(2, '0');
+          if (d.length === 2 && !isNaN(Number(d))) deptSet.add(d);
+        }
+      });
+      const depts = [...deptSet];
       if (depts.length > 0) cp = depts;
     }
 
@@ -270,9 +283,9 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
               </label>
               <textarea className="fi" rows="3" disabled={isNational}
                 value={cpText} onChange={e => setCpText(e.target.value)}
-                placeholder={"01, 02, 14, 27, 59, 76, 80...\nEntrez les numéros de département séparés par des virgules"} />
+                placeholder={"01, 14-27, 59, 76, 80...\nVirgules ou tirets. Ex: 14-27 = depts 14 à 27"} />
               <div style={{fontSize:'10px',color:'var(--muted)',marginTop:'4px'}}>
-                Numéros de département à 2 chiffres. Ex: 01, 14, 27, 76
+                Virgules ou tirets acceptés. Ex: <strong>01, 14, 76</strong> ou plage <strong>14-27</strong>
               </div>
             </div>
           </div>
