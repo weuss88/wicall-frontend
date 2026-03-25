@@ -601,3 +601,32 @@ select.fi option{background:var(--panel);}
   .stat-val{font-size:20px;}
   .stat-lbl{font-size:10px;}
 }
+
+/* TOASTS */
+.toast-wrap{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;
+}
+.toast{
+  padding:10px 16px;border-radius:8px;font-size:13px;max-width:360px;
+  backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  animation:up .2s ease both;pointer-events:auto;
+}
+.toast-error{background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.4);color:var(--red);}
+.toast-success{background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.3);color:var(--green);}
+.toast-info{background:rgba(0,210,200,0.1);border:1px solid rgba(0,210,200,0.3);color:var(--teal);}
+
+/* UTILITAIRES */
+.text-muted{color:var(--muted);}
+.text-muted2{color:var(--muted2);}
+.text-green{color:var(--green);}
+.text-red{color:var(--red);}
+.text-teal{color:var(--teal);}
+.text-yellow{color:var(--yellow);}
+.text-sm{font-size:11px;}
+.text-xs{font-size:10px;}
+.nowrap{white-space:nowrap;}
+.fw-bold{font-weight:700;}
+.fw-semi{font-weight:600;}
+.td-meta{font-size:11px;color:var(--muted2);}
+.td-sub{font-size:11px;color:var(--text2);}

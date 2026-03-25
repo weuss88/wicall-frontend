@@ -53,12 +53,12 @@ export default function BillingTab({ leads, campaigns }) {
           <div><div className="stat-val">{bLeads.length}</div><div className="stat-lbl">Leads soumis</div></div>
         </div>
         <div className="stat-card">
-          <div className="stat-ico" style={{ color: 'var(--green)' }}>✓</div>
+          <div className="stat-ico text-green">✓</div>
           <div><div className="stat-val">{bValidated.length}</div><div className="stat-lbl">Leads validés</div></div>
         </div>
         <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}>
           <div className="stat-ico">💶</div>
-          <div><div className="stat-val" style={{ color: 'var(--green)' }}>{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA total du mois</div></div>
+          <div><div className="stat-val text-green">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA total du mois</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-ico">📋</div>
@@ -77,7 +77,7 @@ export default function BillingTab({ leads, campaigns }) {
             <table className="tbl">
               <thead><tr>
                 <th>Campagne</th><th>Client</th><th>Tag</th>
-                <th>Soumis</th><th>Validés</th><th>CPL</th><th>Taux déval.</th><th style={{ color: 'var(--green)' }}>CA calculé</th>
+                <th>Soumis</th><th>Validés</th><th>CPL</th><th>Taux déval.</th><th className="text-green">CA calculé</th>
               </tr></thead>
               <tbody>
                 {rows.map((r, i) => {
@@ -85,11 +85,11 @@ export default function BillingTab({ leads, campaigns }) {
                   return (
                     <tr key={i}>
                       <td><div className="t-name">{r.nom}</div></td>
-                      <td style={{ color: 'var(--muted2)', fontSize: '11px' }}>{r.client}</td>
+                      <td className="td-meta">{r.client}</td>
                       <td><span className="t-tag" style={{ background: `${col}18`, color: col, border: `1px solid ${col}35` }}>{r.tag}</span></td>
                       <td>{r.leads.length}</td>
                       <td style={{ color: r.valides.length > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: r.valides.length > 0 ? 600 : 400 }}>{r.valides.length}</td>
-                      <td className="t-cpl">{r.cpl > 0 ? r.cpl + ' €' : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
+                      <td className="t-cpl">{r.cpl > 0 ? r.cpl + ' €' : <span className="text-muted">—</span>}</td>
                       <td style={{ color: r.taux < 100 ? '#ffd740' : 'var(--text2)' }}>{r.taux}%</td>
                       <td style={{ color: r.ca > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: r.ca > 0 ? 700 : 400 }}>
                         {r.ca > 0 ? r.ca.toFixed(2) + ' €' : '—'}
@@ -100,7 +100,7 @@ export default function BillingTab({ leads, campaigns }) {
                 <tr style={{ borderTop: '1px solid rgba(0,210,200,0.2)', fontWeight: 700, background: 'rgba(0,210,200,0.03)' }}>
                   <td colSpan="3" style={{ color: 'var(--teal)', fontFamily: 'Rajdhani,sans-serif', letterSpacing: '.5px' }}>TOTAL</td>
                   <td>{bLeads.length}</td>
-                  <td style={{ color: 'var(--green)' }}>{bValidated.length}</td>
+                  <td className="text-green">{bValidated.length}</td>
                   <td colSpan="2"></td>
                   <td style={{ color: 'var(--green)', fontSize: '13px' }}>{totalCA.toFixed(2)} €</td>
                 </tr>

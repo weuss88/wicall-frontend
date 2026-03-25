@@ -6,8 +6,11 @@ import LeadEditModal from '../components/LeadEditModal';
 import ManagerCATab from '../components/ManagerCATab';
 import BillingTab from '../components/BillingTab';
 import UserModal from '../components/UserModal';
+import ToastContainer from '../components/Toast';
+import useToast from '../hooks/useToast';
 
 export default function ManagerPage({ me, onLogout }) {
+  const { toasts, toast } = useToast();
   const [tab, setTab] = useState('camp');
   const [campaigns, setCampaigns] = useState([]);
   const [users, setUsers] = useState([]);
@@ -22,17 +25,17 @@ export default function ManagerPage({ me, onLogout }) {
 
   const loadCampaigns = useCallback(async () => {
     try { setCampaigns(await apiCall('GET', '/campaigns/')); }
-    catch (e) { alert('Erreur chargement campagnes: ' + e.message); }
+    catch (e) { toast('Erreur chargement campagnes: ' + e.message); }
   }, []);
 
   const loadUsers = useCallback(async () => {
     try { setUsers(await apiCall('GET', '/users/')); }
-    catch (e) { alert('Erreur chargement conseillers: ' + e.message); }
+    catch (e) { toast('Erreur chargement conseillers: ' + e.message); }
   }, []);
 
   const loadLeads = useCallback(async () => {
     try { setLeads(await apiCall('GET', '/leads/')); }
-    catch (e) { alert('Erreur chargement leads: ' + e.message); }
+    catch (e) { toast('Erreur chargement leads: ' + e.message); }
   }, []);
 
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
@@ -57,7 +60,7 @@ export default function ManagerPage({ me, onLogout }) {
       setEditCampaign(null);
       await loadCampaigns();
     } catch (e) {
-      alert('Erreur: ' + e.message);
+      toast('Erreur: ' + e.message);
       throw e;
     }
   };
@@ -66,7 +69,7 @@ export default function ManagerPage({ me, onLogout }) {
     try {
       const res = await apiCall('PATCH', '/campaigns/' + id + '/toggle');
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, actif: res.actif } : c));
-    } catch (e) { alert('Erreur: ' + e.message); }
+    } catch (e) { toast('Erreur: ' + e.message); }
   };
 
   const handleDelete = async (id) => {
@@ -74,7 +77,7 @@ export default function ManagerPage({ me, onLogout }) {
     try {
       await apiCall('DELETE', '/campaigns/' + id);
       setCampaigns(prev => prev.filter(c => c.id !== id));
-    } catch (e) { alert('Erreur: ' + e.message); }
+    } catch (e) { toast('Erreur: ' + e.message); }
   };
 
   const defaultPages = (role) => role === 'manager' ? ['camp', 'cons', 'leads', 'stats'] : [];
@@ -86,7 +89,7 @@ export default function ManagerPage({ me, onLogout }) {
     try {
       await apiCall('DELETE', '/users/' + user.id);
       setUsers(prev => prev.filter(u => u.id !== user.id));
-    } catch (e) { alert('Erreur: ' + e.message); }
+    } catch (e) { toast('Erreur: ' + e.message); }
   };
 
   const handleSaveUser = async () => {
@@ -161,7 +164,7 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="sb-row"><div className="sb-dot"></div>Actives<span className="sb-tag">{act}</span></div>
           <div className="sb-foot">
             <div className="sb-user">
-              <div className="sb-av" style={{ color: 'var(--teal)' }}>{(me?.full_name || me?.name || 'M').split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)}</div>
+              <div className="sb-av text-teal">{(me?.full_name || me?.name || 'M').split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)}</div>
               <div><div className="sb-uname">{me?.full_name || me?.name || 'Manager'}</div><div className="sb-urole">{isFullAccess(me) ? 'Propriétaire' : 'Manager'}</div></div>
             </div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCONNEXION</button>
@@ -175,7 +178,7 @@ export default function ManagerPage({ me, onLogout }) {
             <div><div className="mob-bar-brand">WICALL</div><div className="mob-bar-role">Manager</div></div>
           </div>
           <div className="mob-bar-user">
-            <div className="mob-bar-av" style={{ color: 'var(--teal)' }}>{me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'M'}</div>
+            <div className="mob-bar-av text-teal">{me?.name?.split(' ').map(x => x[0]).join('').toUpperCase() || 'M'}</div>
             <div className="mob-bar-uname">{me?.name || 'Manager'}</div>
             <button className="btn-logout" onClick={onLogout}>↩ DÉCO</button>
           </div>
@@ -248,7 +251,7 @@ export default function ManagerPage({ me, onLogout }) {
                             <td>
                               {c.criteres_custom?.length > 0
                                 ? <span style={{ color: 'var(--teal)', fontSize: '10px' }}>{c.criteres_custom.length} critère{c.criteres_custom.length > 1 ? 's' : ''}</span>
-                                : <span style={{ color: 'var(--muted)' }}>—</span>}
+                                : <span className="text-muted">—</span>}
                             </td>
                             <td>
                               <label className="tog">
@@ -284,7 +287,7 @@ export default function ManagerPage({ me, onLogout }) {
                     {users.filter(u => u.role === 'conseiller').map(u => (
                       <tr key={u.id}>
                         <td><div className="t-name">{u.full_name || u.username}</div></td>
-                        <td style={{ color: 'var(--muted2)' }}>{u.username}</td>
+                        <td className="text-muted2">{u.username}</td>
                         <td>
                           <span style={{ background: u.is_active ? 'var(--green2)' : 'rgba(255,68,68,0.1)', color: u.is_active ? 'var(--green)' : 'var(--red)', padding: '3px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '700' }}>
                             {u.is_active ? 'ACTIF' : 'INACTIF'}
@@ -354,7 +357,7 @@ export default function ManagerPage({ me, onLogout }) {
                           const col = TCOL[l.campaign_tag] || '#7ab8b5';
                           const d = new Date(l.created_at);
                           const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                          const nd = v => v || <span style={{ color: 'var(--muted)' }}>—</span>;
+                          const nd = v => v || <span className="text-muted">—</span>;
                           const rappel = l.date_rappel
                             ? new Date(l.date_rappel).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + (l.heure_rappel ? ' ' + l.heure_rappel : '')
                             : null;
@@ -372,7 +375,7 @@ export default function ManagerPage({ me, onLogout }) {
                                   </div>
                                 </div>
                               </td>
-                              <td style={{ fontSize: '11px', color: 'var(--muted2)' }}>{nd(l.civilite)}</td>
+                              <td className="td-meta">{nd(l.civilite)}</td>
                               <td style={{ fontSize: '12px' }}>{nd(l.nom_prospect)}</td>
                               <td style={{ fontSize: '12px' }}>{nd(l.prenom)}</td>
                               <td style={{ fontSize: '11px', maxWidth: '140px' }}>{nd(l.adresse)}</td>
@@ -382,7 +385,7 @@ export default function ManagerPage({ me, onLogout }) {
                               <td style={{ fontSize: '11px', maxWidth: '140px' }}>{nd(l.email)}</td>
                               <td style={{ fontSize: '11px', whiteSpace: 'nowrap', color: 'var(--text2)' }}>{nd(rappel)}</td>
                               <td style={{ fontSize: '11px', color: 'var(--text2)', maxWidth: '160px' }}>{nd(l.commentaire)}</td>
-                              <td style={{ whiteSpace: 'nowrap' }}>
+                              <td className="nowrap">
                                 {l.statut !== 'valide' && <button className="btn-ed" style={{ color: 'var(--green)', borderColor: 'rgba(0,230,118,0.3)', marginRight: '4px' }} onClick={() => handleLeadUpdate(l.id, { statut: 'valide' })}>✓</button>}
                                 {l.statut !== 'supprime' && <button className="btn-dl" style={{ marginRight: '4px' }} onClick={() => handleLeadUpdate(l.id, { statut: 'supprime' })}>✕</button>}
                                 <button className="btn-ed" onClick={() => setEditLead(l)}>✏</button>
@@ -442,7 +445,7 @@ export default function ManagerPage({ me, onLogout }) {
                           return (
                             <tr key={u.id}>
                               <td><div className="t-name">{u.full_name || u.username}</div></td>
-                              <td style={{ color: 'var(--muted2)', fontSize: '11px' }}>{u.username}</td>
+                              <td className="td-meta">{u.username}</td>
                               {ALL_PAGES.map(p => (
                                 <td key={p.key} style={{ textAlign: 'center' }}>
                                   <input type="checkbox"
@@ -453,7 +456,7 @@ export default function ManagerPage({ me, onLogout }) {
                                       try {
                                         await apiCall('PUT', '/users/' + u.id, { pages_access: newPages });
                                         setUsers(prev => prev.map(x => x.id === u.id ? { ...x, pages_access: newPages } : x));
-                                      } catch (err) { alert('Erreur: ' + err.message); }
+                                      } catch (err) { toast('Erreur: ' + err.message); }
                                     }} />
                                 </td>
                               ))}
@@ -479,6 +482,7 @@ export default function ManagerPage({ me, onLogout }) {
       {editLead && (
         <LeadEditModal lead={editLead} onSave={handleLeadUpdate} onClose={() => setEditLead(null)} />
       )}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

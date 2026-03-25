@@ -26,6 +26,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
   const [tauxEval, setTauxEval] = useState(100);
   const [criteres, setCriteres] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (campaign) {
@@ -64,7 +65,8 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
   };
 
   const handleSave = async () => {
-    if (!nom.trim() || !client.trim()) { alert('Nom et client sont obligatoires'); return; }
+    if (!nom.trim() || !client.trim()) { setFormError('Nom et client sont obligatoires'); return; }
+    setFormError('');
 
     const finalLogement = logAll ? null : (logement.length > 0 ? logement : null);
     const finalStatut = statAll ? null : (statut.length > 0 ? statut : null);
@@ -312,6 +314,7 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
           </div>
 
         </div>
+        {formError && <div style={{ padding: '0 24px 12px', color: 'var(--red)', fontSize: '12px' }}>{formError}</div>}
         <div className="mo-foot">
           <button className="btn-cancel" onClick={onClose}>Annuler</button>
           <button className="btn-save" onClick={handleSave} disabled={saving}>

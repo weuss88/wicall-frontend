@@ -54,8 +54,8 @@ export default function ManagerCATab({ leads, campaigns }) {
       </div>
       <div className="stats-row">
         <div className="stat-card"><div className="stat-ico">📋</div><div><div className="stat-val">{totalLeads}</div><div className="stat-lbl">Leads total</div></div></div>
-        <div className="stat-card"><div className="stat-ico" style={{ color: 'var(--green)' }}>✓</div><div><div className="stat-val">{totalValide}</div><div className="stat-lbl">Validés</div></div></div>
-        <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}><div className="stat-ico">💶</div><div><div className="stat-val" style={{ color: 'var(--green)' }}>{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div></div>
+        <div className="stat-card"><div className="stat-ico text-green">✓</div><div><div className="stat-val">{totalValide}</div><div className="stat-lbl">Validés</div></div></div>
+        <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}><div className="stat-ico">💶</div><div><div className="stat-val text-green">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div></div>
         <div className="stat-card"><div className="stat-ico">📅</div><div><div className="stat-val">{days.filter(d => d.total > 0).length}</div><div className="stat-lbl">Jours actifs</div></div></div>
       </div>
       <div className="mgr-card">
@@ -68,9 +68,9 @@ export default function ManagerCATab({ leads, campaigns }) {
           <div style={{ overflowX: 'auto' }}>
             <table className="tbl">
               <thead><tr>
-                <th>Date</th><th>Leads</th><th style={{ color: 'var(--green)' }}>Validés</th>
-                <th style={{ color: '#ffd740' }}>En attente</th><th style={{ color: 'var(--red)' }}>Supprimés</th>
-                <th style={{ color: 'var(--green)' }}>CA du jour</th>
+                <th>Date</th><th>Leads</th><th className="text-green">Validés</th>
+                <th style={{ color: '#ffd740' }}>En attente</th><th className="text-red">Supprimés</th>
+                <th className="text-green">CA du jour</th>
               </tr></thead>
               <tbody>
                 {days.filter(d => d.total > 0).map(d => {
@@ -95,9 +95,9 @@ export default function ManagerCATab({ leads, campaigns }) {
                 <tr style={{ borderTop: '1px solid rgba(0,210,200,0.2)', fontWeight: 700, background: 'rgba(0,210,200,0.03)' }}>
                   <td style={{ color: 'var(--teal)', fontFamily: 'Rajdhani,sans-serif', letterSpacing: '.5px' }}>TOTAL</td>
                   <td>{totalLeads}</td>
-                  <td style={{ color: 'var(--green)' }}>{totalValide}</td>
+                  <td className="text-green">{totalValide}</td>
                   <td style={{ color: '#ffd740' }}>{monthLeads.filter(l => l.statut === 'en_attente').length}</td>
-                  <td style={{ color: 'var(--red)' }}>{monthLeads.filter(l => l.statut === 'supprime').length}</td>
+                  <td className="text-red">{monthLeads.filter(l => l.statut === 'supprime').length}</td>
                   <td style={{ color: 'var(--green)', fontSize: '13px' }}>{totalCA.toFixed(2)} €</td>
                 </tr>
               </tbody>
