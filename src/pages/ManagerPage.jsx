@@ -408,9 +408,10 @@ export default function ManagerPage({ me, onLogout }) {
                               <td style={{ fontSize: '11px', whiteSpace: 'nowrap', color: 'var(--text2)' }}>{nd(rappel)}</td>
                               <td style={{ fontSize: '11px', color: 'var(--text2)', maxWidth: '160px' }}>{nd(l.commentaire)}</td>
                               <td className="nowrap">
-                                {l.statut !== 'valide' && <button className="btn-ed" style={{ color: 'var(--green)', borderColor: 'rgba(0,230,118,0.3)', marginRight: '4px' }} onClick={() => handleLeadUpdate(l.id, { statut: 'valide' })}>✓</button>}
-                                <button className="btn-ed" style={{ marginRight: '4px' }} onClick={() => setEditLead(l)}>✏</button>
-                                <button className="btn-dl" title="Supprimer définitivement" onClick={() => handleDeleteLead(l.id)}>🗑</button>
+                                {l.statut !== 'valide' && <button className="btn-ed" style={{ color: 'var(--green)', borderColor: 'rgba(0,230,118,0.3)', marginRight: '4px' }} title="Valider" onClick={() => handleLeadUpdate(l.id, { statut: 'valide' })}>✓</button>}
+                                {l.statut !== 'supprime' && <button className="btn-dl" style={{ marginRight: '4px' }} title="Marquer supprimé" onClick={() => handleLeadUpdate(l.id, { statut: 'supprime' })}>✕</button>}
+                                <button className="btn-ed" style={{ marginRight: '4px' }} title="Modifier" onClick={() => setEditLead(l)}>✏</button>
+                                <button className="btn-dl" style={{ color: 'var(--red)', borderColor: 'rgba(255,68,68,0.4)' }} title="Supprimer définitivement" onClick={() => handleDeleteLead(l.id)}>🗑</button>
                               </td>
                             </tr>
                           );
