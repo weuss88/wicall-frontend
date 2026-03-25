@@ -52,6 +52,15 @@ export default function ManagerPage({ me, onLogout }) {
     return updated;
   };
 
+  const handleDeleteLead = async (id) => {
+    if (!window.confirm('Supprimer définitivement ce lead ? Cette action est irréversible.')) return;
+    try {
+      await apiCall('DELETE', '/leads/' + id);
+      setLeads(prev => prev.filter(l => l.id !== id));
+      toast('Lead supprimé', 'success');
+    } catch (e) { toast('Erreur: ' + e.message); }
+  };
+
   const handleSaveCampaign = async (data, id) => {
     try {
       if (id) await apiCall('PUT', '/campaigns/' + id, data);
@@ -89,6 +98,15 @@ export default function ManagerPage({ me, onLogout }) {
     try {
       await apiCall('DELETE', '/users/' + user.id);
       setUsers(prev => prev.filter(u => u.id !== user.id));
+      toast('Compte supprimé', 'success');
+    } catch (e) { toast('Erreur: ' + e.message); }
+  };
+
+  const handleToggleUser = async (user) => {
+    try {
+      await apiCall('PUT', '/users/' + user.id, { is_active: !user.is_active });
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: !u.is_active } : u));
+      toast(user.is_active ? 'Compte désactivé' : 'Compte activé', 'success');
     } catch (e) { toast('Erreur: ' + e.message); }
   };
 
@@ -282,16 +300,20 @@ export default function ManagerPage({ me, onLogout }) {
                   <button className="btn-add" onClick={openAddUser}>+ AJOUTER</button>
                 </div>
                 <table className="tbl">
-                  <thead><tr><th>Nom</th><th>Identifiant</th><th>Statut</th><th>Actions</th></tr></thead>
+                  <thead><tr><th>Nom</th><th>Identifiant</th><th>Actif</th><th>Actions</th></tr></thead>
                   <tbody>
                     {users.filter(u => u.role === 'conseiller').map(u => (
                       <tr key={u.id}>
-                        <td><div className="t-name">{u.full_name || u.username}</div></td>
+                        <td>
+                          <div className="t-name">{u.full_name || u.username}</div>
+                          {!u.is_active && <div style={{ fontSize: '10px', color: 'var(--red)', marginTop: '2px' }}>Compte désactivé</div>}
+                        </td>
                         <td className="text-muted2">{u.username}</td>
                         <td>
-                          <span style={{ background: u.is_active ? 'var(--green2)' : 'rgba(255,68,68,0.1)', color: u.is_active ? 'var(--green)' : 'var(--red)', padding: '3px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '700' }}>
-                            {u.is_active ? 'ACTIF' : 'INACTIF'}
-                          </span>
+                          <label className="tog">
+                            <input type="checkbox" checked={!!u.is_active} onChange={() => handleToggleUser(u)} />
+                            <div className="tog-track"></div><div className="tog-thumb"></div>
+                          </label>
                         </td>
                         <td>
                           <button className="btn-ed" onClick={() => openEditUser(u)}>Modifier</button>
@@ -387,8 +409,8 @@ export default function ManagerPage({ me, onLogout }) {
                               <td style={{ fontSize: '11px', color: 'var(--text2)', maxWidth: '160px' }}>{nd(l.commentaire)}</td>
                               <td className="nowrap">
                                 {l.statut !== 'valide' && <button className="btn-ed" style={{ color: 'var(--green)', borderColor: 'rgba(0,230,118,0.3)', marginRight: '4px' }} onClick={() => handleLeadUpdate(l.id, { statut: 'valide' })}>✓</button>}
-                                {l.statut !== 'supprime' && <button className="btn-dl" style={{ marginRight: '4px' }} onClick={() => handleLeadUpdate(l.id, { statut: 'supprime' })}>✕</button>}
-                                <button className="btn-ed" onClick={() => setEditLead(l)}>✏</button>
+                                <button className="btn-ed" style={{ marginRight: '4px' }} onClick={() => setEditLead(l)}>✏</button>
+                                <button className="btn-dl" title="Supprimer définitivement" onClick={() => handleDeleteLead(l.id)}>🗑</button>
                               </td>
                             </tr>
                           );
@@ -425,7 +447,10 @@ export default function ManagerPage({ me, onLogout }) {
               <div className="mgr-card">
                 <div className="mgr-head">
                   <div className="mgr-head-title">🔑 GESTION DES ACCÈS MANAGERS</div>
-                  <button className="btn-add" style={{ background: 'none', border: '1px solid rgba(0,210,200,0.3)', color: 'var(--teal)' }} onClick={loadUsers}>↺</button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn-add" style={{ background: 'none', border: '1px solid rgba(0,210,200,0.3)', color: 'var(--teal)' }} onClick={loadUsers}>↺</button>
+                    <button className="btn-add" onClick={() => setUserDlg({ mode: 'add', user: null, username: '', fullName: '', password: '', newRole: 'manager', pagesAccess: defaultPages('manager'), saving: false, error: '' })}>+ MANAGER</button>
+                  </div>
                 </div>
                 <p style={{ padding: '0 16px 12px', color: 'var(--muted)', fontSize: '12px', margin: 0 }}>
                   Cochez les pages auxquelles chaque manager a accès. Les modifications sont appliquées immédiatement.
@@ -438,6 +463,7 @@ export default function ManagerPage({ me, onLogout }) {
                       <thead><tr>
                         <th>Manager</th><th>Identifiant</th>
                         {ALL_PAGES.map(p => <th key={p.key} style={{ textAlign: 'center', fontSize: '11px' }}>{p.label}</th>)}
+                        <th>Actions</th>
                       </tr></thead>
                       <tbody>
                         {users.filter(u => u.role === 'manager' && !u.is_owner).map(u => {
@@ -460,6 +486,10 @@ export default function ManagerPage({ me, onLogout }) {
                                     }} />
                                 </td>
                               ))}
+                              <td className="nowrap">
+                                <button className="btn-ed" onClick={() => openEditUser(u)}>Modifier</button>
+                                <button className="btn-dl" onClick={() => handleDeleteUser(u)}>✕</button>
+                              </td>
                             </tr>
                           );
                         })}
