@@ -425,17 +425,7 @@ export default function ManagerPage({ me, onLogout }) {
           )}
 
           {/* Tab Stats CA */}
-          {tab === 'stats' && (
-            <>
-              <div className="topbar">
-                <div>
-                  <div className="tp-path">WICALL / STATS CA</div>
-                  <div className="tp-title">Chiffre d'affaires mensuel</div>
-                </div>
-              </div>
-              <ManagerCATab leads={leads} campaigns={campaigns} />
-            </>
-          )}
+          {tab === 'stats' && <ManagerCATab leads={leads} campaigns={campaigns} />}
 
           {/* Tab Facturation */}
           {tab === 'billing' && hasPage(me, 'billing') && (
