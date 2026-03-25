@@ -31,6 +31,7 @@ export async function apiCall(method, path, body = null) {
     const e = await r.json().catch(() => ({}));
     throw new Error(e.detail || 'Erreur serveur');
   }
+  if (r.status === 204) return null;
   return r.json();
 }
 
