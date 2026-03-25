@@ -160,9 +160,13 @@ export default function CampaignModal({ campaign, onSave, onClose }) {
               </select>
             </div>
             <div className="fg2">
-              <label>CPL (€)</label>
-              <input className="fi" type="text" placeholder="12€"
-                value={cpl} onChange={e => setCpl(e.target.value)} />
+              <label>CPL</label>
+              <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                <input className="fi" type="text" placeholder="12"
+                  value={cpl} onChange={e => setCpl(e.target.value)}
+                  style={{ borderRadius: '6px 0 0 6px', borderRight: 'none', flex: 1 }} />
+                <span style={{ padding: '0 10px', background: 'rgba(0,210,200,0.08)', border: '1px solid rgba(0,210,200,0.2)', borderRadius: '0 6px 6px 0', color: 'var(--teal)', fontFamily: 'Rajdhani,sans-serif', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center' }}>€</span>
+              </div>
             </div>
             <div className="fg2">
               <label>Taux de dévaluation (%)</label>

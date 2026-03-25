@@ -5,6 +5,7 @@ export default function BillingTab({ leads, campaigns }) {
   const now = new Date();
   const [billingMonth, setBillingMonth] = useState(now.getMonth());
   const [billingYear, setBillingYear] = useState(now.getFullYear());
+  const [filterClient, setFilterClient] = useState('');
 
   const bLeads = leads.filter(l => {
     const d = new Date(l.created_at);
@@ -19,7 +20,7 @@ export default function BillingTab({ leads, campaigns }) {
     if (l.statut === 'valide') byCamp[l.campaign_id].valides.push(l);
   });
 
-  const rows = Object.values(byCamp).map(g => {
+  const allRows = Object.values(byCamp).map(g => {
     const camp = campaigns.find(c => c.nom === g.nom);
     const cpl = parseCPL(camp?.cpl);
     const taux = camp?.taux_devaluation ?? 100;
@@ -27,7 +28,13 @@ export default function BillingTab({ leads, campaigns }) {
     return { ...g, cpl, taux, ca };
   }).sort((a, b) => b.ca - a.ca);
 
+  const clients = [...new Set(allRows.map(r => r.client))].sort();
+  const rows = filterClient ? allRows.filter(r => r.client === filterClient) : allRows;
+
+  const filteredLeadsForExport = filterClient ? bLeads.filter(l => l.campaign_client === filterClient) : bLeads;
   const totalCA = rows.reduce((s, r) => s + r.ca, 0);
+  const totalValides = rows.reduce((s, r) => s + r.valides.length, 0);
+  const totalSoumis = rows.reduce((s, r) => s + r.leads.length, 0);
 
   const prevMonth = () => { if (billingMonth === 0) { setBillingMonth(11); setBillingYear(y => y - 1); } else setBillingMonth(m => m - 1); };
   const nextMonth = () => { if (billingMonth === 11) { setBillingMonth(0); setBillingYear(y => y + 1); } else setBillingMonth(m => m + 1); };
@@ -41,34 +48,44 @@ export default function BillingTab({ leads, campaigns }) {
           {MOIS_FR[billingMonth].toUpperCase()} {billingYear}
         </div>
         {canNext && <button className="btn-r" onClick={nextMonth}>Suiv. →</button>}
-        {bLeads.length > 0 && (
+        {clients.length > 1 && (
+          <select className="fi" style={{ width: 'auto', padding: '4px 10px', fontSize: '12px', marginLeft: '8px' }}
+            value={filterClient} onChange={e => setFilterClient(e.target.value)}>
+            <option value="">Tous les clients</option>
+            {clients.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        {filteredLeadsForExport.length > 0 && (
           <button className="btn-add" style={{ background: 'none', border: '1px solid rgba(0,230,118,0.35)', color: 'var(--green)', marginLeft: 'auto' }}
-            onClick={() => exportCSV(bLeads, campaigns)}>↓ Export CSV</button>
+            onClick={() => exportCSV(filteredLeadsForExport, campaigns)}>↓ Export CSV</button>
         )}
       </div>
 
       <div className="stats-row">
         <div className="stat-card">
           <div className="stat-ico">📋</div>
-          <div><div className="stat-val">{bLeads.length}</div><div className="stat-lbl">Leads soumis</div></div>
+          <div><div className="stat-val">{totalSoumis}</div><div className="stat-lbl">Leads soumis</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-ico text-green">✓</div>
-          <div><div className="stat-val">{bValidated.length}</div><div className="stat-lbl">Leads validés</div></div>
+          <div><div className="stat-val">{totalValides}</div><div className="stat-lbl">Leads validés</div></div>
         </div>
         <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}>
           <div className="stat-ico">💶</div>
-          <div><div className="stat-val text-green">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA total du mois</div></div>
+          <div><div className="stat-val text-green">{totalCA.toFixed(2)} €</div><div className="stat-lbl">{filterClient ? `CA — ${filterClient}` : 'CA total du mois'}</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-ico">📋</div>
-          <div><div className="stat-val">{rows.length}</div><div className="stat-lbl">Campagnes actives</div></div>
+          <div><div className="stat-val">{rows.length}</div><div className="stat-lbl">Campagnes</div></div>
         </div>
       </div>
 
       <div className="mgr-card">
         <div className="mgr-head">
-          <div className="mgr-head-title">DÉTAIL PAR CAMPAGNE — {MOIS_FR[billingMonth].toUpperCase()} {billingYear}</div>
+          <div className="mgr-head-title">
+            DÉTAIL PAR CAMPAGNE — {MOIS_FR[billingMonth].toUpperCase()} {billingYear}
+            {filterClient && <span style={{ color: 'var(--teal)', fontSize: '11px', marginLeft: '8px', fontFamily: 'DM Sans,sans-serif', fontWeight: 400 }}>· {filterClient}</span>}
+          </div>
         </div>
         {rows.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)', fontSize: '13px' }}>Aucun lead ce mois</div>
@@ -99,8 +116,8 @@ export default function BillingTab({ leads, campaigns }) {
                 })}
                 <tr style={{ borderTop: '1px solid rgba(0,210,200,0.2)', fontWeight: 700, background: 'rgba(0,210,200,0.03)' }}>
                   <td colSpan="3" style={{ color: 'var(--teal)', fontFamily: 'Rajdhani,sans-serif', letterSpacing: '.5px' }}>TOTAL</td>
-                  <td>{bLeads.length}</td>
-                  <td className="text-green">{bValidated.length}</td>
+                  <td>{totalSoumis}</td>
+                  <td className="text-green">{totalValides}</td>
                   <td colSpan="2"></td>
                   <td style={{ color: 'var(--green)', fontSize: '13px' }}>{totalCA.toFixed(2)} €</td>
                 </tr>
