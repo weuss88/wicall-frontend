@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { apiCall } from '../api';
+import { TCOL, MOIS_FR, parseCPL, fmtTel } from '../utils';
 
 const DEPTS = {'01':'Ain','02':'Aisne','03':'Allier','04':'Alpes-HteProv','05':'Htes-Alpes','06':'Alpes-Mar','07':'Ardèche','08':'Ardennes','09':'Ariège','10':'Aube','11':'Aude','12':'Aveyron','13':'Bouches-du-Rhône','14':'Calvados','15':'Cantal','16':'Charente','17':'Char-Maritime','18':'Cher','19':'Corrèze','21':'Côte-d\'Or','22':'Côtes-d\'Armor','23':'Creuse','24':'Dordogne','25':'Doubs','26':'Drôme','27':'Eure','28':'Eure-et-Loir','29':'Finistère','30':'Gard','31':'Hte-Garonne','32':'Gers','33':'Gironde','34':'Hérault','35':'Ille-et-Vilaine','36':'Indre','37':'Indre-et-Loire','38':'Isère','39':'Jura','40':'Landes','41':'Loir-et-Cher','42':'Loire','43':'Hte-Loire','44':'Loire-Atl','45':'Loiret','46':'Lot','47':'Lot-et-Garonne','48':'Lozère','49':'Maine-et-Loire','50':'Manche','51':'Marne','52':'Hte-Marne','53':'Mayenne','54':'M-et-Moselle','55':'Meuse','56':'Morbihan','57':'Moselle','58':'Nièvre','59':'Nord','60':'Oise','61':'Orne','62':'Pas-de-Calais','63':'Puy-de-Dôme','64':'Pyr-Atl','65':'Htes-Pyr','66':'Pyr-Or','67':'Bas-Rhin','68':'Haut-Rhin','69':'Rhône','70':'Hte-Saône','71':'Saône-et-Loire','72':'Sarthe','73':'Savoie','74':'Hte-Savoie','75':'Paris','76':'Seine-Maritime','77':'Seine-et-Marne','78':'Yvelines','79':'Deux-Sèvres','80':'Somme','81':'Tarn','82':'Tarn-et-Garonne','83':'Var','84':'Vaucluse','85':'Vendée','86':'Vienne','87':'Hte-Vienne','88':'Vosges','89':'Yonne','90':'Ter-Belfort','91':'Essonne','92':'Hts-de-Seine','93':'Seine-St-Denis','94':'Val-de-Marne','95':'Val-d\'Oise'};
-const TCOL = {PAC:'#4d9fff',PV:'#ffd740',ITE:'#c97fff',REN:'#00d2c8',MUT:'#00e676',AUTO:'#ff9100',FIN:'#ff6b9d',ALARM:'#ff6b6b',AUTRE:'#7ab8b5'};
 
 function cpMatch(camp, cp) {
   if (camp.cp === 'national') return 'nat';
@@ -101,20 +101,6 @@ function CampaignCard({ camp, status, S, selected, onSelect }) {
   );
 }
 
-function fmtTel(val) {
-  const digits = val.replace(/\D/g, '').substring(0, 11);
-  if (digits.startsWith('33') && digits.length >= 2) {
-    const parts = ['33'];
-    const rest = digits.substring(2);
-    if (rest.length > 0) parts.push(rest.substring(0, 1));
-    if (rest.length > 1) parts.push(rest.substring(1, 3));
-    if (rest.length > 3) parts.push(rest.substring(3, 5));
-    if (rest.length > 5) parts.push(rest.substring(5, 7));
-    if (rest.length > 7) parts.push(rest.substring(7, 9));
-    return parts.join(' ');
-  }
-  return digits.substring(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ');
-}
 
 function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -282,12 +268,6 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
 
 const D = v => v ? v : <span style={{color:'var(--muted)'}}>—</span>;
 
-const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-function parseCPL(cpl) {
-  if (!cpl) return 0;
-  const n = parseFloat(String(cpl).replace(/[^0-9.]/g, ''));
-  return isNaN(n) ? 0 : n;
-}
 
 function MonCATab({ myLeads, campaigns }) {
   const now = new Date();
