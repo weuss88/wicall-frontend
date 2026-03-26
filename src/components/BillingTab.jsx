@@ -6,6 +6,7 @@ export default function BillingTab({ leads, campaigns }) {
   const [billingMonth, setBillingMonth] = useState(now.getMonth());
   const [billingYear, setBillingYear] = useState(now.getFullYear());
   const [filterClient, setFilterClient] = useState('');
+  const [filterCamp, setFilterCamp] = useState('');
 
   const bLeads = leads.filter(l => {
     const d = new Date(l.created_at);
@@ -29,9 +30,14 @@ export default function BillingTab({ leads, campaigns }) {
   }).sort((a, b) => b.ca - a.ca);
 
   const clients = [...new Set(allRows.map(r => r.client))].sort();
-  const rows = filterClient ? allRows.filter(r => r.client === filterClient) : allRows;
+  const rows = allRows
+    .filter(r => !filterClient || r.client === filterClient)
+    .filter(r => !filterCamp || r.nom === filterCamp);
 
-  const filteredLeadsForExport = filterClient ? bLeads.filter(l => l.campaign_client === filterClient) : bLeads;
+  const campOptions = (filterClient ? allRows.filter(r => r.client === filterClient) : allRows).map(r => r.nom).sort();
+  const filteredLeadsForExport = bLeads
+    .filter(l => !filterClient || l.campaign_client === filterClient)
+    .filter(l => !filterCamp || l.campaign_nom === filterCamp);
   const totalCA = rows.reduce((s, r) => s + r.ca, 0);
   const totalValides = rows.reduce((s, r) => s + r.valides.length, 0);
   const totalSoumis = rows.reduce((s, r) => s + r.leads.length, 0);
@@ -50,9 +56,16 @@ export default function BillingTab({ leads, campaigns }) {
         {canNext && <button className="btn-r" onClick={nextMonth}>Suiv. →</button>}
         {clients.length > 1 && (
           <select className="fi" style={{ width: 'auto', padding: '4px 10px', fontSize: '12px', marginLeft: '8px' }}
-            value={filterClient} onChange={e => setFilterClient(e.target.value)}>
+            value={filterClient} onChange={e => { setFilterClient(e.target.value); setFilterCamp(''); }}>
             <option value="">Tous les clients</option>
             {clients.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
+        {campOptions.length > 1 && (
+          <select className="fi" style={{ width: 'auto', padding: '4px 10px', fontSize: '12px' }}
+            value={filterCamp} onChange={e => setFilterCamp(e.target.value)}>
+            <option value="">Toutes les campagnes</option>
+            {campOptions.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         )}
         {filteredLeadsForExport.length > 0 && (
@@ -85,6 +98,7 @@ export default function BillingTab({ leads, campaigns }) {
           <div className="mgr-head-title">
             DÉTAIL PAR CAMPAGNE — {MOIS_FR[billingMonth].toUpperCase()} {billingYear}
             {filterClient && <span style={{ color: 'var(--teal)', fontSize: '11px', marginLeft: '8px', fontFamily: 'DM Sans,sans-serif', fontWeight: 400 }}>· {filterClient}</span>}
+            {filterCamp && <span style={{ color: 'var(--teal)', fontSize: '11px', marginLeft: '4px', fontFamily: 'DM Sans,sans-serif', fontWeight: 400 }}>· {filterCamp}</span>}
           </div>
         </div>
         {rows.length === 0 ? (
