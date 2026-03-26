@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiCall } from '../api';
-import { TCOL, ALL_PAGES, StatutBadge, exportCSV, isFullAccess, hasPage } from '../utils';
+import { TCOL, ALL_PAGES, StatutBadge, exportCSV, isFullAccess, hasPage, parseCPL } from '../utils';
 import CampaignModal from '../components/CampaignModal';
 import LeadEditModal from '../components/LeadEditModal';
 import ManagerCATab from '../components/ManagerCATab';
@@ -263,7 +263,7 @@ export default function ManagerPage({ me, onLogout }) {
                           <tr key={c.id}>
                             <td><div className="t-name">{c.nom}</div><div className="t-client">{c.client}</div></td>
                             <td><span className="t-tag" style={{ background: `${col}18`, color: col, border: `1px solid ${col}35` }}>{c.tag}</span></td>
-                            <td className="t-cpl">{c.cpl}</td>
+                            <td className="t-cpl">{Math.floor(parseCPL(c.cpl) * (c.taux_devaluation ?? 100) / 100)} €</td>
                             <td style={{ color: 'var(--text2)', fontSize: '11px' }}>{ageTxt}</td>
                             <td><div className="cp-prev">{cpTxt}</div></td>
                             <td>

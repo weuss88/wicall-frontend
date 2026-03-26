@@ -55,7 +55,7 @@ export default function ManagerCATab({ leads, campaigns }) {
       <div className="stats-row">
         <div className="stat-card"><div className="stat-ico">📋</div><div><div className="stat-val">{totalLeads}</div><div className="stat-lbl">Leads total</div></div></div>
         <div className="stat-card"><div className="stat-ico text-green">✓</div><div><div className="stat-val">{totalValide}</div><div className="stat-lbl">Validés</div></div></div>
-        <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}><div className="stat-ico">💶</div><div><div className="stat-val text-green">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div></div>
+        <div className="stat-card" style={{ border: '1px solid rgba(0,230,118,0.3)', background: 'rgba(0,230,118,0.06)' }}><div className="stat-ico">💶</div><div><div className="stat-val text-green">{Math.floor(totalCA)} €</div><div className="stat-lbl">CA du mois</div></div></div>
         <div className="stat-card"><div className="stat-ico">📅</div><div><div className="stat-val">{days.filter(d => d.total > 0).length}</div><div className="stat-lbl">Jours actifs</div></div></div>
       </div>
       <div className="mgr-card">
@@ -87,7 +87,7 @@ export default function ManagerCATab({ leads, campaigns }) {
                       <td style={{ color: d.attente > 0 ? '#ffd740' : 'var(--muted)' }}>{d.attente || '—'}</td>
                       <td style={{ color: d.supprime > 0 ? 'var(--red)' : 'var(--muted)' }}>{d.supprime || '—'}</td>
                       <td style={{ color: d.ca > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: d.ca > 0 ? 700 : 400 }}>
-                        {d.ca > 0 ? d.ca.toFixed(2) + ' €' : '—'}
+                        {d.ca > 0 ? Math.floor(d.ca) + ' €' : '—'}
                       </td>
                     </tr>
                   );
@@ -98,7 +98,7 @@ export default function ManagerCATab({ leads, campaigns }) {
                   <td className="text-green">{totalValide}</td>
                   <td style={{ color: '#ffd740' }}>{monthLeads.filter(l => l.statut === 'en_attente').length}</td>
                   <td className="text-red">{monthLeads.filter(l => l.statut === 'supprime').length}</td>
-                  <td style={{ color: 'var(--green)', fontSize: '13px' }}>{totalCA.toFixed(2)} €</td>
+                  <td style={{ color: 'var(--green)', fontSize: '13px' }}>{Math.floor(totalCA)} €</td>
                 </tr>
               </tbody>
             </table>

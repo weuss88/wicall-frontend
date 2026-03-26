@@ -93,7 +93,7 @@ function CampaignCard({ camp, status, S, selected, onSelect }) {
         </div>
       )}
       <div className="cb">
-        <div className="cpl">{camp.cpl}/lead</div>
+        <div className="cpl">{Math.floor(parseCPL(camp.cpl) * (camp.taux_devaluation ?? 100) / 100)} €/lead</div>
         {camp.alerte ? <div className="anote">⚠ {camp.alerte}</div> : <div style={{flex:1}}></div>}
         <div className={`cpb ${cpCls}`}>{cpLbl}</div>
       </div>
@@ -167,7 +167,7 @@ function LeadModal({ selectedCamps, allCamps, S, onClose, onSuccess }) {
                 <div key={c.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 10px',background:'rgba(0,210,200,0.06)',border:'1px solid rgba(0,210,200,0.15)',borderRadius:'6px',marginBottom:'4px'}}>
                   <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{c.tag}</span>
                   <span style={{fontSize:'12px',color:'var(--text)'}}>{c.nom}</span>
-                  <span style={{fontSize:'11px',color:'var(--muted)',marginLeft:'auto'}}>{c.cpl}/lead</span>
+                  <span style={{fontSize:'11px',color:'var(--muted)',marginLeft:'auto'}}>{Math.floor(parseCPL(c.cpl) * (c.taux_devaluation ?? 100) / 100)} €/lead</span>
                 </div>
               );
             })}
@@ -330,7 +330,7 @@ function MonCATab({ myLeads, campaigns }) {
         </div>
         <div className="stat-card">
           <div className="stat-ico">💶</div>
-          <div><div className="stat-val">{totalCA.toFixed(2)} €</div><div className="stat-lbl">CA du mois</div></div>
+          <div><div className="stat-val">{Math.floor(totalCA)} €</div><div className="stat-lbl">CA du mois</div></div>
         </div>
         <div className="stat-card">
           <div className="stat-ico">📅</div>
@@ -366,7 +366,7 @@ function MonCATab({ myLeads, campaigns }) {
                       <td style={{color: d.attente > 0 ? '#ffd740' : 'var(--muted)'}}>{d.attente || '—'}</td>
                       <td style={{color: d.supprime > 0 ? 'var(--red)' : 'var(--muted)'}}>{d.supprime || '—'}</td>
                       <td style={{color: d.ca > 0 ? 'var(--green)' : 'var(--muted)', fontWeight: d.ca > 0 ? 700 : 400}}>
-                        {d.ca > 0 ? d.ca.toFixed(2) + ' €' : '—'}
+                        {d.ca > 0 ? Math.floor(d.ca) + ' €' : '—'}
                       </td>
                     </tr>
                   );
@@ -377,7 +377,7 @@ function MonCATab({ myLeads, campaigns }) {
                   <td style={{color:'var(--green)'}}>{totalValide}</td>
                   <td style={{color:'#ffd740'}}>{monthLeads.filter(l => l.statut === 'en_attente').length}</td>
                   <td style={{color:'var(--red)'}}>{monthLeads.filter(l => l.statut === 'supprime').length}</td>
-                  <td style={{color:'var(--green)',fontSize:'13px'}}>{totalCA.toFixed(2)} €</td>
+                  <td style={{color:'var(--green)',fontSize:'13px'}}>{Math.floor(totalCA)} €</td>
                 </tr>
               </tbody>
             </table>
