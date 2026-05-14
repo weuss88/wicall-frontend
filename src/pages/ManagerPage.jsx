@@ -22,7 +22,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [search, setSearch] = useState('');
   const [filterLeadCons, setFilterLeadCons] = useState('');
   const [filterLeadCamp, setFilterLeadCamp] = useState('');
-  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`; });
   const [filterDateTo, setFilterDateTo] = useState('');
 
   const loadCampaigns = useCallback(async () => {

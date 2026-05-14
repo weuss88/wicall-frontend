@@ -399,6 +399,21 @@ function StatutBadge({ statut }) {
 }
 
 function HistoriqueTab({ myLeads }) {
+  const [filterDateFrom, setFilterDateFrom] = useState(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`; });
+  const [filterDateTo, setFilterDateTo] = useState('');
+
+  const filteredLeads = myLeads.filter(l => {
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom); from.setHours(0,0,0,0);
+      if (new Date(l.created_at) < from) return false;
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo); to.setHours(23,59,59,999);
+      if (new Date(l.created_at) > to) return false;
+    }
+    return true;
+  });
+
   if (myLeads.length === 0) {
     return (
       <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
@@ -409,6 +424,19 @@ function HistoriqueTab({ myLeads }) {
   }
   return (
     <div style={{overflowX:'auto'}}>
+      <div style={{display:'flex',alignItems:'center',gap:'4px',padding:'8px 16px 12px',flexWrap:'wrap'}}>
+        <span style={{color:'var(--muted)',fontSize:'11px'}}>Du</span>
+        <input type="date" className="fi" style={{width:'auto',padding:'4px 8px',fontSize:'11px'}}
+          value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+        <span style={{color:'var(--muted)',fontSize:'11px'}}>au</span>
+        <input type="date" className="fi" style={{width:'auto',padding:'4px 8px',fontSize:'11px'}}
+          value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+        {(filterDateFrom || filterDateTo) && (
+          <button onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
+            style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',padding:'0 4px',fontSize:'11px'}}>✕</button>
+        )}
+        <span style={{color:'var(--teal)',fontSize:'10px',marginLeft:'4px'}}>({filteredLeads.length} / {myLeads.length})</span>
+      </div>
       <table className="tbl">
         <thead><tr>
           <th>Date</th><th>Statut</th><th>Campagne</th><th>Civ.</th><th>Nom</th><th>Prénom</th>
@@ -416,7 +444,9 @@ function HistoriqueTab({ myLeads }) {
           <th>Rappel</th><th>Note</th>
         </tr></thead>
         <tbody>
-          {myLeads.map(l => {
+          {filteredLeads.length === 0 ? (
+            <tr><td colSpan="13" style={{textAlign:'center',padding:'40px',color:'var(--muted)',fontSize:'13px'}}>Aucun lead pour cette période</td></tr>
+          ) : filteredLeads.map(l => {
             const col = TCOL[l.campaign_tag] || '#7ab8b5';
             const d = new Date(l.created_at);
             const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' })
