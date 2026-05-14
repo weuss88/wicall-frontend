@@ -22,6 +22,8 @@ export default function ManagerPage({ me, onLogout }) {
   const [search, setSearch] = useState('');
   const [filterLeadCons, setFilterLeadCons] = useState('');
   const [filterLeadCamp, setFilterLeadCamp] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
 
   const loadCampaigns = useCallback(async () => {
     try { setCampaigns(await apiCall('GET', '/campaigns/')); }
@@ -144,6 +146,14 @@ export default function ManagerPage({ me, onLogout }) {
   const filteredLeads = leads.filter(l => {
     if (filterLeadCons && String(l.conseiller_id) !== filterLeadCons) return false;
     if (filterLeadCamp && String(l.campaign_id) !== filterLeadCamp) return false;
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom); from.setHours(0, 0, 0, 0);
+      if (new Date(l.created_at) < from) return false;
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo); to.setHours(23, 59, 59, 999);
+      if (new Date(l.created_at) > to) return false;
+    }
     return true;
   });
   const leadConseillers = [...new Map(leads.map(l => [l.conseiller_id, { id: l.conseiller_id, name: l.conseiller_name }])).values()];
@@ -339,7 +349,7 @@ export default function ManagerPage({ me, onLogout }) {
                 <div className="mgr-head" style={{ flexWrap: 'wrap', gap: '8px' }}>
                   <div className="mgr-head-title">
                     LEADS
-                    {(filterLeadCons || filterLeadCamp) && <span style={{ color: 'var(--teal)', fontSize: '10px', marginLeft: '8px' }}>({filteredLeads.length} / {leads.length})</span>}
+                    {(filterLeadCons || filterLeadCamp || filterDateFrom || filterDateTo) && <span style={{ color: 'var(--teal)', fontSize: '10px', marginLeft: '8px' }}>({filteredLeads.length} / {leads.length})</span>}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                     {leadConseillers.length > 1 && (
@@ -354,6 +364,18 @@ export default function ManagerPage({ me, onLogout }) {
                         {leadCampagnes.map(c => <option key={c.id} value={String(c.id)}>{c.nom}</option>)}
                       </select>
                     )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Du</span>
+                      <input type="date" className="fi" style={{ width: 'auto', padding: '4px 8px', fontSize: '11px' }}
+                        value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+                      <span style={{ color: 'var(--muted)', fontSize: '11px' }}>au</span>
+                      <input type="date" className="fi" style={{ width: 'auto', padding: '4px 8px', fontSize: '11px' }}
+                        value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+                      {(filterDateFrom || filterDateTo) && (
+                        <button onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}
+                          style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: '0 4px', fontSize: '11px' }}>✕</button>
+                      )}
+                    </div>
                     <button className="btn-add" style={{ background: 'none', border: '1px solid rgba(0,210,200,0.3)', color: 'var(--teal)' }} onClick={loadLeads}>↺</button>
                     {filteredLeads.length > 0 && (
                       <button className="btn-add" style={{ background: 'none', border: '1px solid rgba(0,230,118,0.35)', color: 'var(--green)' }}
