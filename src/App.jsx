@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiCall, setToken, loginAPI, onUnauthorized } from './api';
+import { apiCall, loginAPI, onUnauthorized } from './api';
 import LoginPage from './pages/LoginPage';
 import ManagerPage from './pages/ManagerPage';
 import ConseillerPage from './pages/ConseillerPage';
@@ -13,32 +13,22 @@ export default function App() {
       setMe(null);
       setPage('login');
     });
-    const token = localStorage.getItem('wicall_token');
-    if (token) {
-      apiCall('GET', '/auth/me')
-        .then(user => {
-          setMe({ role: user.role, name: user.full_name, full_name: user.full_name, is_owner: user.is_owner, pages_access: user.pages_access });
-          setPage(user.role === 'manager' ? 'manager' : 'conseiller');
-        })
-        .catch(() => {
-          setToken(null);
-          setPage('login');
-        });
-    } else {
-      setPage('login');
-    }
+    apiCall('GET', '/auth/me')
+      .then(user => {
+        setMe({ role: user.role, name: user.full_name, full_name: user.full_name, is_owner: user.is_owner, pages_access: user.pages_access });
+        setPage(user.role === 'manager' ? 'manager' : 'conseiller');
+      })
+      .catch(() => setPage('login'));
   }, []);
 
   const handleLogin = async (username, password) => {
     const data = await loginAPI(username, password);
-    setToken(data.access_token);
     setMe({ role: data.role, name: data.full_name, full_name: data.full_name, is_owner: data.is_owner, pages_access: data.pages_access });
     setPage(data.role === 'manager' ? 'manager' : 'conseiller');
   };
 
   const handleLogout = async () => {
     try { await apiCall('POST', '/auth/logout'); } catch (_) {}
-    setToken(null);
     setMe(null);
     setPage('login');
   };

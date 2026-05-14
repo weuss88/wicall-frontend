@@ -25,6 +25,12 @@ export default function ManagerPage({ me, onLogout }) {
   const [filterLeadCamp, setFilterLeadCamp] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-01`; });
   const [filterDateTo, setFilterDateTo] = useState('');
+  const [alerts, setAlerts] = useState([]);
+  const [showAlerts, setShowAlerts] = useState(false);
+
+  const loadAlerts = useCallback(async () => {
+    try { setAlerts(await apiCall('GET', '/auth/alerts')); } catch (_) {}
+  }, []);
 
   const loadCampaigns = useCallback(async () => {
     try { setCampaigns(await apiCall('GET', '/campaigns/')); }
@@ -41,7 +47,7 @@ export default function ManagerPage({ me, onLogout }) {
     catch (e) { toast('Erreur chargement leads: ' + e.message); }
   }, []);
 
-  useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
+  useEffect(() => { loadCampaigns(); loadAlerts(); }, [loadCampaigns, loadAlerts]);
 
   const handleTabChange = (newTab) => {
     setTab(newTab);
@@ -192,6 +198,15 @@ export default function ManagerPage({ me, onLogout }) {
           <div className="sb-row"><div className="sb-dot"></div>Total<span className="sb-tag">{tot}</span></div>
           <div className="sb-row"><div className="sb-dot"></div>Actives<span className="sb-tag">{act}</span></div>
           <div className="sb-foot">
+            {alerts.length > 0 && (
+              <div onClick={() => setShowAlerts(true)} style={{ margin: '0 0 10px', padding: '8px 10px', background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px' }}>🔔</span>
+                <div>
+                  <div style={{ color: 'var(--red)', fontSize: '11px', fontWeight: 700 }}>{alerts.length} alerte{alerts.length > 1 ? 's' : ''} sécurité</div>
+                  <div style={{ color: 'var(--muted)', fontSize: '10px' }}>Connexions suspectes</div>
+                </div>
+              </div>
+            )}
             <div className="sb-user">
               <div className="sb-av text-teal">{(me?.full_name || me?.name || 'M').split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)}</div>
               <div><div className="sb-uname">{me?.full_name || me?.name || 'Manager'}</div><div className="sb-urole">{isFullAccess(me) ? 'Propriétaire' : 'Manager'}</div></div>
@@ -554,6 +569,31 @@ export default function ManagerPage({ me, onLogout }) {
                 }}>
                 ✕ CONFIRMER SUPPRESSION
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAlerts && (
+        <div className="mo">
+          <div className="mo-box" style={{ maxWidth: '420px' }}>
+            <div className="mo-head">
+              <div className="mo-title">🔔 ALERTES SÉCURITÉ</div>
+              <button className="mo-x" onClick={() => setShowAlerts(false)}>✕</button>
+            </div>
+            <div className="mo-body">
+              <p style={{ color: 'var(--muted)', fontSize: '12px', margin: '0 0 12px' }}>
+                Ces identifiants ont eu 3+ tentatives échouées dans la dernière heure. Vérifiez s'il s'agit d'une tentative d'intrusion.
+              </p>
+              {alerts.map(a => (
+                <div key={a.username} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,68,68,0.07)', border: '1px solid rgba(255,68,68,0.25)', borderRadius: '8px', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{a.username}</div>
+                  <div style={{ color: 'var(--red)', fontSize: '12px', fontWeight: 700, background: 'rgba(255,68,68,0.12)', padding: '2px 8px', borderRadius: '20px' }}>{a.count} tentatives</div>
+                </div>
+              ))}
+            </div>
+            <div className="mo-foot">
+              <button className="btn-cancel" onClick={() => setShowAlerts(false)}>Fermer</button>
+              <button className="btn-save" onClick={() => { loadAlerts(); }}>↺ Actualiser</button>
             </div>
           </div>
         </div>
