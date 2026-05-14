@@ -458,7 +458,10 @@ function HistoriqueTab({ myLeads }) {
             return (
               <tr key={l.id}>
                 <td style={{fontSize:'11px',color:'var(--muted)',whiteSpace:'nowrap'}}>{dateStr}</td>
-                <td><StatutBadge statut={l.statut} /></td>
+                <td>
+                  <StatutBadge statut={l.statut} />
+                  {l.motif_suppression && <div style={{fontSize:'10px',color:'var(--muted)',marginTop:'3px',maxWidth:'120px',fontStyle:'italic'}}>{l.motif_suppression}</div>}
+                </td>
                 <td>
                   <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
                     <span style={{background:`${col}18`,color:col,fontSize:'9px',fontWeight:700,padding:'1px 6px',borderRadius:'4px',border:`1px solid ${col}35`}}>{l.campaign_tag}</span>

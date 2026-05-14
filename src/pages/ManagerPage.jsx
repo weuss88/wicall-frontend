@@ -19,6 +19,7 @@ export default function ManagerPage({ me, onLogout }) {
   const [editCampaign, setEditCampaign] = useState(null);
   const [userDlg, setUserDlg] = useState(null);
   const [editLead, setEditLead] = useState(null);
+  const [suppressionDlg, setSuppressionDlg] = useState(null);
   const [search, setSearch] = useState('');
   const [filterLeadCons, setFilterLeadCons] = useState('');
   const [filterLeadCamp, setFilterLeadCamp] = useState('');
@@ -408,7 +409,10 @@ export default function ManagerPage({ me, onLogout }) {
                           return (
                             <tr key={l.id}>
                               <td style={{ fontSize: '11px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{dateStr}</td>
-                              <td><StatutBadge statut={l.statut} /></td>
+                              <td>
+                                <StatutBadge statut={l.statut} />
+                                {l.motif_suppression && <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px', maxWidth: '120px', fontStyle: 'italic' }}>{l.motif_suppression}</div>}
+                              </td>
                               <td><div className="t-name" style={{ fontSize: '12px' }}>{l.conseiller_name}</div></td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -431,7 +435,7 @@ export default function ManagerPage({ me, onLogout }) {
                               <td style={{ fontSize: '11px', color: 'var(--text2)', maxWidth: '160px' }}>{nd(l.commentaire)}</td>
                               <td className="nowrap">
                                 {l.statut !== 'valide' && <button className="btn-ed" style={{ color: 'var(--green)', borderColor: 'rgba(0,230,118,0.3)', marginRight: '4px' }} title="Valider" onClick={() => handleLeadUpdate(l.id, { statut: 'valide' })}>✓</button>}
-                                {l.statut !== 'supprime' && <button className="btn-dl" style={{ marginRight: '4px' }} title="Marquer supprimé" onClick={() => handleLeadUpdate(l.id, { statut: 'supprime' })}>✕</button>}
+                                {l.statut !== 'supprime' && <button className="btn-dl" style={{ marginRight: '4px' }} title="Marquer supprimé" onClick={() => setSuppressionDlg({ lead: l, motif: '' })}>✕</button>}
                                 <button className="btn-ed" style={{ marginRight: '4px' }} title="Modifier" onClick={() => setEditLead(l)}>✏</button>
                                 <button className="btn-dl" style={{ color: 'var(--red)', borderColor: 'rgba(255,68,68,0.4)' }} title="Supprimer définitivement" onClick={() => handleDeleteLead(l.id)}>🗑</button>
                               </td>
@@ -524,6 +528,35 @@ export default function ManagerPage({ me, onLogout }) {
       )}
       {editLead && (
         <LeadEditModal lead={editLead} onSave={handleLeadUpdate} onClose={() => setEditLead(null)} />
+      )}
+      {suppressionDlg && (
+        <div className="mo">
+          <div className="mo-box" style={{ maxWidth: '400px' }}>
+            <div className="mo-head">
+              <div className="mo-title">MOTIF DE SUPPRESSION</div>
+              <button className="mo-x" onClick={() => setSuppressionDlg(null)}>✕</button>
+            </div>
+            <div className="mo-body">
+              <div className="fg2">
+                <label>Motif (optionnel)</label>
+                <textarea className="fi" rows="3" placeholder="Raison de la suppression..."
+                  value={suppressionDlg.motif}
+                  onChange={e => setSuppressionDlg(d => ({ ...d, motif: e.target.value }))}
+                  style={{ resize: 'vertical', minHeight: '70px', fontFamily: 'inherit' }} />
+              </div>
+            </div>
+            <div className="mo-foot">
+              <button className="btn-cancel" onClick={() => setSuppressionDlg(null)}>Annuler</button>
+              <button className="btn-save" style={{ background: 'rgba(255,68,68,0.15)', borderColor: 'rgba(255,68,68,0.4)', color: 'var(--red)' }}
+                onClick={async () => {
+                  await handleLeadUpdate(suppressionDlg.lead.id, { statut: 'supprime', motif_suppression: suppressionDlg.motif.trim() || null });
+                  setSuppressionDlg(null);
+                }}>
+                ✕ CONFIRMER SUPPRESSION
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <ToastContainer toasts={toasts} />
     </div>
