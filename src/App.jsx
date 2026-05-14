@@ -36,7 +36,8 @@ export default function App() {
     setPage(data.role === 'manager' ? 'manager' : 'conseiller');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiCall('POST', '/auth/logout'); } catch (_) {}
     setToken(null);
     setMe(null);
     setPage('login');
