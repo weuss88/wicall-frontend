@@ -43,6 +43,22 @@ export default function App() {
     setPage('login');
   };
 
+  useEffect(() => {
+    if (page !== 'manager' && page !== 'conseiller') return;
+    let timer;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(handleLogout, 30 * 60 * 1000);
+    };
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [page]);
+
   if (page === 'loading') return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#060d14',flexDirection:'column',gap:'16px'}}>
       <div style={{width:'48px',height:'48px',borderRadius:'12px',background:'linear-gradient(135deg,rgba(0,210,200,0.25),rgba(0,210,200,0.05))',border:'1.5px solid rgba(0,210,200,0.4)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Rajdhani,sans-serif',fontSize:'24px',fontWeight:700,color:'#00f5ea',boxShadow:'0 0 20px rgba(0,210,200,0.3)'}}>W</div>
