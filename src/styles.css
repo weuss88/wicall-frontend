@@ -1,40 +1,33 @@
 :root {
-  --bg:      #060d14;
-  --bg2:     #080f18;
-  --panel:   #0a1420;
-  --panel2:  #0d1a28;
-  --card:    #0f1f30;
-  --card2:   #122335;
-  --border:  rgba(0,210,200,0.12);
-  --bord2:   rgba(0,210,200,0.25);
-  --bord3:   rgba(0,210,200,0.5);
-  --teal:    #00d2c8;
-  --teal2:   #00f5ea;
-  --teal3:   rgba(0,210,200,0.08);
-  --cyan:    #00b8d4;
-  --green:   #00e676;
-  --green2:  rgba(0,230,118,0.15);
-  --red:     #ff4444;
-  --red2:    rgba(255,68,68,0.12);
-  --yellow:  #ffd740;
-  --orange:  #ff9100;
-  --text:    #c8e8e5;
-  --text2:   #7ab8b5;
-  --muted:   #3a6068;
-  --muted2:  #4a7880;
-  --glow:    0 0 20px rgba(0,210,200,0.15);
-  --glow2:   0 0 40px rgba(0,210,200,0.1);
+  --bg:      #f0f4f5;
+  --bg2:     #e8edef;
+  --panel:   #ffffff;
+  --panel2:  #f8fafa;
+  --card:    #ffffff;
+  --card2:   #f8fafa;
+  --border:  rgba(0,0,0,0.09);
+  --bord2:   rgba(0,160,150,0.3);
+  --bord3:   rgba(0,160,150,0.55);
+  --teal:    #00a89e;
+  --teal2:   #007570;
+  --teal3:   rgba(0,150,140,0.07);
+  --cyan:    #0097a7;
+  --green:   #00a651;
+  --green2:  rgba(0,166,81,0.12);
+  --red:     #e53935;
+  --red2:    rgba(229,57,53,0.1);
+  --yellow:  #f0a500;
+  --orange:  #ef6c00;
+  --text:    #182e2c;
+  --text2:   #2c6460;
+  --muted:   #7a9a98;
+  --muted2:  #5a8480;
+  --glow:    0 2px 10px rgba(0,0,0,0.08);
+  --glow2:   0 4px 20px rgba(0,0,0,0.1);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
 
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:
-    linear-gradient(rgba(0,210,200,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(0,210,200,0.03) 1px,transparent 1px);
-  background-size:40px 40px;
-}
 
 .page{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;}
 
@@ -66,7 +59,7 @@ body::before{
 .login-box{
   background:linear-gradient(145deg,var(--card),var(--panel));
   border:1px solid var(--border);border-radius:16px;padding:32px;
-  box-shadow:var(--glow2),0 20px 60px rgba(0,0,0,0.4);
+  box-shadow:var(--glow2),0 8px 32px rgba(0,0,0,0.1);
 }
 .l-err{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.25);
   color:var(--red);padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:16px;}
@@ -75,7 +68,7 @@ body::before{
   color:var(--teal);margin-bottom:8px;display:block;}
 .l-in{
   width:100%;padding:12px 16px;
-  background:rgba(0,210,200,0.04);border:1px solid var(--border);
+  background:#f5f8f8;border:1px solid var(--border);
   border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;
   transition:all .2s;
 }
@@ -366,13 +359,13 @@ body::before{
 .btn-dl:hover{background:rgba(255,68,68,0.12);}
 
 /* MODAL */
-.mo{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);
   z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
 .mo-box{
   background:linear-gradient(145deg,var(--card2),var(--panel));
   border:1px solid var(--bord2);border-radius:16px;
   width:100%;max-width:680px;max-height:90vh;overflow-y:auto;
-  box-shadow:var(--glow2),0 30px 80px rgba(0,0,0,0.5);
+  box-shadow:var(--glow2),0 8px 30px rgba(0,0,0,0.12);
 }
 .mo-box::-webkit-scrollbar{width:4px;}
 .mo-box::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:2px;}
@@ -400,7 +393,7 @@ body::before{
 .fg2 label{font-size:10px;font-weight:600;color:var(--teal);
   text-transform:uppercase;letter-spacing:1.5px;}
 .fi{width:100%;padding:9px 12px;
-  background:rgba(0,210,200,0.04);border:1px solid var(--border);
+  background:#f5f8f8;border:1px solid var(--border);
   border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;
   transition:all .2s;}
 .fi:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px rgba(0,210,200,0.1);}
@@ -609,7 +602,7 @@ select.fi option{background:var(--panel);}
 }
 .toast{
   padding:10px 16px;border-radius:8px;font-size:13px;max-width:360px;
-  backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.12);
   animation:up .2s ease both;pointer-events:auto;
 }
 .toast-error{background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.4);color:var(--red);}
