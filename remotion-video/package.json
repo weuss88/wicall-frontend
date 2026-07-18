@@ -1,0 +1,17 @@
+{
+  "name": "wicall-remotion-ia-regulation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vidéo TikTok Remotion — Régulation de l'IA : Europe vs USA vs Chine",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render RegulationIA out/regulation-ia-tiktok.mp4",
+    "render:preview": "remotion render RegulationIA out/preview.mp4 --scale=0.5"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.245",
+    "@remotion/cli": "^4.0.245"
+  }
+}
