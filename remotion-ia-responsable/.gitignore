@@ -1,0 +1,8 @@
+node_modules/
+out/
+.env
+.env.local
+# Les images telechargees ne sont pas versionnees par defaut (droits/poids).
+# Retire cette ligne si tu veux les committer.
+public/assets/*
+!public/assets/.gitkeep
